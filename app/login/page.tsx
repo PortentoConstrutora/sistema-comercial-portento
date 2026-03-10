@@ -3,23 +3,65 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { supabase } from "../lib/supabase";
 
 export default function LoginPage() {
   const router = useRouter();
   const [usuario, setUsuario] = useState("");
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState("");
+  const [carregando, setCarregando] = useState(false);
 
-  function entrarNoSistema() {
+  async function entrarNoSistema(e?: React.FormEvent) {
+    e?.preventDefault();
+    setErro("");
+
     if (!usuario.trim() || !senha.trim()) {
       setErro("Preencha usuário e senha.");
       return;
     }
 
-    localStorage.setItem("portento_logado", "sim");
-    localStorage.setItem("portento_usuario", usuario);
+    setCarregando(true);
 
-    router.push("/painel");
+    try {
+      const usuarioNormalizado = usuario
+        .trim()
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+
+      const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("usuario", usuarioNormalizado)
+        .eq("senha", senha.trim())
+        .eq("ativo", true)
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        setErro("Erro ao consultar o banco.");
+        setCarregando(false);
+        return;
+      }
+
+      if (!data) {
+        setErro("Usuário ou senha inválidos.");
+        setCarregando(false);
+        return;
+      }
+
+      localStorage.setItem("portento_logado", "sim");
+      localStorage.setItem("portento_usuario", data.usuario);
+      localStorage.setItem("portento_nome", data.nome);
+      localStorage.setItem("portento_perfil", data.perfil);
+
+      router.push("/painel");
+    } catch (e) {
+      console.error(e);
+      setErro("Erro ao entrar no sistema.");
+      setCarregando(false);
+    }
   }
 
   return (
@@ -38,7 +80,7 @@ export default function LoginPage() {
             Entre com seu usuário e senha para acessar o sistema.
           </p>
 
-          <div className="mt-8 space-y-4">
+          <form onSubmit={entrarNoSistema} className="mt-8 space-y-4">
             <div>
               <label className="mb-2 block text-sm font-semibold">
                 Usuário
@@ -70,13 +112,13 @@ export default function LoginPage() {
             ) : null}
 
             <button
-              type="button"
-              onClick={entrarNoSistema}
-              className="w-full rounded-xl bg-amber-400 px-4 py-3 font-semibold text-slate-900 transition hover:bg-amber-300"
+              type="submit"
+              disabled={carregando}
+              className="w-full rounded-xl bg-amber-400 px-4 py-3 font-semibold text-slate-900 transition hover:bg-amber-300 disabled:opacity-70"
             >
-              Entrar
+              {carregando ? "Entrando..." : "Entrar"}
             </button>
-          </div>
+          </form>
         </div>
 
         <div className="mt-4 text-center">
