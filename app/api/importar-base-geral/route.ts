@@ -2,6 +2,13 @@ import { NextResponse } from "next/server";
 import { importarLeadDaBaseGeral } from "../../lib/importacao-base-geral";
 import { supabase } from "../../lib/supabase";
 
+export async function GET() {
+  return NextResponse.json({
+    ok: true,
+    mensagem: "Rota importar-base-geral ativa",
+  });
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
