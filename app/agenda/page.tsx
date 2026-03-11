@@ -195,11 +195,11 @@ async function concluirTarefa(id: number) {
       <div className="mx-auto max-w-7xl">
         <section className="mb-8 rounded-3xl bg-slate-900 px-6 py-8 text-white shadow-xl md:px-10">
           <p className="text-xs font-semibold uppercase tracking-[0.35em] text-amber-300">
-            Minhas Tarefas
+            Tarefas
           </p>
 
           <h1 className="mt-3 text-3xl font-bold md:text-5xl">
-            Agenda de Trabalho
+            Minhas Tarefas
           </h1>
 
           <p className="mt-4 text-sm text-slate-200 md:text-base">

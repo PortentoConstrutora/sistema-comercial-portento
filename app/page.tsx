@@ -1,6 +1,13 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 export default function Home() {
+  const [usuario, setUsuario] = useState("");
+  const [perfil, setPerfil] = useState("");
+  const [logado, setLogado] = useState(false);
+
   const cards = [
     {
       titulo: "CRM",
@@ -9,8 +16,8 @@ export default function Home() {
       href: "/crm",
     },
     {
-      titulo: "Agenda",
-      descricao: "Compromissos, lembretes e atividades futuras.",
+      titulo: "Minhas Tarefas",
+      descricao: "Tarefas, retornos, prazos e pendências.",
       status: "Organização diária",
       href: "/agenda",
     },
@@ -28,6 +35,21 @@ export default function Home() {
     },
   ];
 
+  useEffect(() => {
+    const usuarioSalvo = localStorage.getItem("portento_usuario") || "";
+    const perfilSalvo = localStorage.getItem("portento_perfil") || "";
+    const logadoSalvo = localStorage.getItem("portento_logado") === "sim";
+
+    setUsuario(usuarioSalvo);
+    setPerfil(perfilSalvo);
+    setLogado(logadoSalvo);
+  }, []);
+
+  function getPainelLink() {
+    if (perfil === "diretoria" || perfil === "admin") return "/diretoria";
+    return "/crm";
+  }
+
   return (
     <main className="min-h-screen bg-slate-100 text-slate-900">
       <section className="mx-auto max-w-7xl px-4 py-6 md:px-8 md:py-10">
@@ -43,16 +65,34 @@ export default function Home() {
               </h1>
 
               <p className="mt-4 max-w-2xl text-sm text-slate-200 md:text-base">
-                Plataforma comercial com CRM, agenda, diário de bordo,
+                Plataforma comercial com CRM, tarefas, diário de bordo,
                 fechamentos e área de diretoria.
               </p>
+
+              {logado ? (
+                <div className="mt-6 flex flex-wrap items-center gap-3">
+                  <div className="rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-sm">
+                    Logado como <strong>{usuario || "Usuário"}</strong>
+                    {perfil ? <> • Perfil: <strong>{perfil}</strong></> : null}
+                  </div>
+
+                  <Link
+                    href={getPainelLink()}
+                    className="inline-block rounded-xl bg-amber-400 px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-amber-300"
+                  >
+                    Entrar no painel
+                  </Link>
+                </div>
+              ) : (
+                <Link
+                  href="/login"
+                  className="mt-6 inline-block rounded-xl bg-amber-400 px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-amber-300"
+                >
+                  Acessar sistema
+                </Link>
+              )}
             </div>
-<Link
-  href="/login"
-  className="mt-6 inline-block rounded-xl bg-amber-400 px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-amber-300"
->
-  Acessar sistema
-</Link>
+
             <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm">
               <p className="text-slate-200">Ambiente inicial do projeto</p>
               <p className="mt-1 font-semibold text-white">
@@ -88,37 +128,6 @@ export default function Home() {
               </Link>
             </div>
           ))}
-        </section>
-
-        <section className="grid gap-4 md:grid-cols-3">
-          <div className="rounded-2xl bg-white p-5 shadow-sm">
-            <h3 className="text-base font-bold text-slate-900">
-              Próximo passo
-            </h3>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              Criar a navegação real entre módulos e organizar melhor a página
-              inicial.
-            </p>
-          </div>
-
-          <div className="rounded-2xl bg-white p-5 shadow-sm">
-            <h3 className="text-base font-bold text-slate-900">
-              Depois disso
-            </h3>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              Vamos ligar login, perfis de acesso, CRM, agenda e diretoria.
-            </p>
-          </div>
-
-          <div className="rounded-2xl bg-white p-5 shadow-sm">
-            <h3 className="text-base font-bold text-slate-900">
-              Visual final
-            </h3>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              Logo, centralização, menu, versão celular e layout profissional
-              serão ajustados nas próximas etapas.
-            </p>
-          </div>
         </section>
       </section>
     </main>

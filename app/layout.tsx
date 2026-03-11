@@ -1,21 +1,45 @@
+"use client";
+
 import type { Metadata } from "next";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import "./globals.css";
 
-export const metadata: Metadata = {
-  title: "Sistema Comercial • Portento",
-  description: "Sistema comercial da Portento Construtora",
-};
+// Remova export const metadata daqui se der erro por ser client component
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const router = useRouter();
+  const [usuario, setUsuario] = useState("");
+  const [perfil, setPerfil] = useState("");
+  const [logado, setLogado] = useState(false);
+
+  useEffect(() => {
+    const usuarioSalvo = localStorage.getItem("portento_usuario") || "";
+    const perfilSalvo = localStorage.getItem("portento_perfil") || "";
+    const logadoSalvo = localStorage.getItem("portento_logado") === "sim";
+
+    setUsuario(usuarioSalvo);
+    setPerfil(perfilSalvo);
+    setLogado(logadoSalvo);
+  }, []);
+
+  function sairDoSistema() {
+    localStorage.removeItem("portento_logado");
+    localStorage.removeItem("portento_usuario");
+    localStorage.removeItem("portento_nome");
+    localStorage.removeItem("portento_perfil");
+    router.push("/login");
+  }
+
   const links = [
     { label: "Início", href: "/" },
     { label: "CRM", href: "/crm" },
-    { label: "Agenda", href: "/agenda" },
+    { label: "Minhas Tarefas", href: "/agenda" },
     { label: "Diário", href: "/diario" },
     { label: "Fechamentos", href: "/fechamentos" },
   ];
@@ -34,7 +58,7 @@ export default function RootLayout({
               </h1>
             </div>
 
-            <nav className="flex flex-wrap gap-2">
+            <nav className="flex flex-wrap items-center gap-2">
               {links.map((link) => (
                 <Link
                   key={link.href}
@@ -44,6 +68,21 @@ export default function RootLayout({
                   {link.label}
                 </Link>
               ))}
+
+              {logado ? (
+                <>
+                  <div className="ml-2 rounded-xl bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-700">
+                    {usuario || "Usuário"} {perfil ? `• ${perfil}` : ""}
+                  </div>
+
+                  <button
+                    onClick={sairDoSistema}
+                    className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700"
+                  >
+                    Sair
+                  </button>
+                </>
+              ) : null}
             </nav>
           </div>
         </header>

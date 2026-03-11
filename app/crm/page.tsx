@@ -33,7 +33,9 @@ export default function CrmPage() {
     const nome = localStorage.getItem("portento_nome");
     const perfilSalvo = localStorage.getItem("portento_perfil");
     const usuario = localStorage.getItem("portento_usuario");
-
+const ehDiretoria =
+  String(perfil || "").toLowerCase() === "diretoria" ||
+  String(perfil || "").toLowerCase() === "admin";
     if (logado !== "sim") {
       router.push("/login");
       return;

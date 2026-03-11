@@ -56,7 +56,13 @@ export default function LoginPage() {
       localStorage.setItem("portento_nome", data.nome);
       localStorage.setItem("portento_perfil", data.perfil);
 
-      router.push("/painel");
+      const perfilNormalizado = String(data.perfil || "").toLowerCase();
+
+      if (perfilNormalizado === "diretoria" || perfilNormalizado === "admin") {
+        router.push("/diretoria");
+      } else {
+        router.push("/crm");
+      }
     } catch (e) {
       console.error(e);
       setErro("Erro ao entrar no sistema.");
