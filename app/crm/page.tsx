@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
@@ -33,9 +34,7 @@ export default function CrmPage() {
     const nome = localStorage.getItem("portento_nome");
     const perfilSalvo = localStorage.getItem("portento_perfil");
     const usuario = localStorage.getItem("portento_usuario");
-const ehDiretoria =
-  String(perfil || "").toLowerCase() === "diretoria" ||
-  String(perfil || "").toLowerCase() === "admin";
+
     if (logado !== "sim") {
       router.push("/login");
       return;
@@ -97,15 +96,19 @@ const ehDiretoria =
 
   const totalLeads = leadsFiltrados.length;
   const totalNovos = leadsFiltrados.filter((l) => l.status_lead === "Novo").length;
-  const totalAndamento = leadsFiltrados.filter((l) => l.status_lead === "Em andamento").length;
-  const totalAgendados = leadsFiltrados.filter((l) => l.status_lead === "Agendado").length;
+  const totalAndamento = leadsFiltrados.filter(
+    (l) => l.status_lead === "Em andamento"
+  ).length;
+  const totalAgendados = leadsFiltrados.filter(
+    (l) => l.status_lead === "Agendado"
+  ).length;
 
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-8 md:px-8">
       <div className="mx-auto max-w-7xl">
         <section className="mb-8 rounded-3xl bg-slate-900 px-6 py-8 text-white shadow-xl md:px-10">
           <p className="text-xs font-semibold uppercase tracking-[0.35em] text-amber-300">
-            Meus Leads
+            CRM
           </p>
 
           <h1 className="mt-3 text-3xl font-bold md:text-5xl">
@@ -113,40 +116,84 @@ const ehDiretoria =
           </h1>
 
           <p className="mt-4 text-sm text-slate-200 md:text-base">
-            Gestão de leads, etapas do funil, acompanhamento e próximas ações.
+            Gestão de leads, tarefas do CRM, etapas do funil, acompanhamento e
+            próximas ações.
           </p>
 
           <p className="mt-4 text-sm text-slate-300">
             Usuário logado: <strong>{nomeUsuario || "Carregando..."}</strong>
           </p>
         </section>
-<div className="mt-6">
-  <button
-    onClick={() => router.push("/crm/novo")}
-    className="rounded-xl bg-amber-400 px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-amber-300"
-  >
-    Novo Lead
-  </button>
-</div>
+
+        <section className="mb-6 grid gap-4 md:grid-cols-2">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">
+              CRM
+            </p>
+            <h2 className="mt-2 text-xl font-bold text-slate-900">Leads</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Gestão dos leads, etapas do funil, acompanhamento comercial e
+              atualização do atendimento.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">
+              CRM
+            </p>
+            <h2 className="mt-2 text-xl font-bold text-slate-900">
+              Tarefas do CRM
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Pendências, retornos, primeiro contato e próximas ações ligadas
+              aos leads.
+            </p>
+
+            <Link
+              href="/agenda"
+              className="mt-4 inline-block rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700"
+            >
+              Abrir tarefas do CRM
+            </Link>
+          </div>
+        </section>
+
+        <div className="mb-6">
+          <button
+            onClick={() => router.push("/crm/novo")}
+            className="rounded-xl bg-amber-400 px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-amber-300"
+          >
+            Novo Lead
+          </button>
+        </div>
+
         <section className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-2xl bg-white p-5 shadow-sm">
             <p className="text-sm text-slate-500">Total de leads</p>
-            <h2 className="mt-2 text-3xl font-bold text-slate-900">{totalLeads}</h2>
+            <h2 className="mt-2 text-3xl font-bold text-slate-900">
+              {totalLeads}
+            </h2>
           </div>
 
           <div className="rounded-2xl bg-white p-5 shadow-sm">
             <p className="text-sm text-slate-500">Novos</p>
-            <h2 className="mt-2 text-3xl font-bold text-slate-900">{totalNovos}</h2>
+            <h2 className="mt-2 text-3xl font-bold text-slate-900">
+              {totalNovos}
+            </h2>
           </div>
 
           <div className="rounded-2xl bg-white p-5 shadow-sm">
             <p className="text-sm text-slate-500">Em andamento</p>
-            <h2 className="mt-2 text-3xl font-bold text-slate-900">{totalAndamento}</h2>
+            <h2 className="mt-2 text-3xl font-bold text-slate-900">
+              {totalAndamento}
+            </h2>
           </div>
 
           <div className="rounded-2xl bg-white p-5 shadow-sm">
             <p className="text-sm text-slate-500">Agendados</p>
-            <h2 className="mt-2 text-3xl font-bold text-slate-900">{totalAgendados}</h2>
+            <h2 className="mt-2 text-3xl font-bold text-slate-900">
+              {totalAgendados}
+            </h2>
           </div>
         </section>
 
@@ -192,41 +239,81 @@ const ehDiretoria =
               <table className="w-full min-w-[1100px] border-collapse">
                 <thead>
                   <tr className="border-b border-slate-200 text-left">
-                    <th className="px-3 py-3 text-sm font-bold text-slate-700">Nome</th>
-                    <th className="px-3 py-3 text-sm font-bold text-slate-700">Telefone</th>
-                    <th className="px-3 py-3 text-sm font-bold text-slate-700">Empreendimento</th>
-                    <th className="px-3 py-3 text-sm font-bold text-slate-700">Origem</th>
-                    <th className="px-3 py-3 text-sm font-bold text-slate-700">Campanha</th>
-                    <th className="px-3 py-3 text-sm font-bold text-slate-700">Status</th>
-                    <th className="px-3 py-3 text-sm font-bold text-slate-700">Etapa</th>
-                    <th className="px-3 py-3 text-sm font-bold text-slate-700">Próxima ação</th>
-                    <th className="px-3 py-3 text-sm font-bold text-slate-700">Ação</th>
+                    <th className="px-3 py-3 text-sm font-bold text-slate-700">
+                      Nome
+                    </th>
+                    <th className="px-3 py-3 text-sm font-bold text-slate-700">
+                      Telefone
+                    </th>
+                    <th className="px-3 py-3 text-sm font-bold text-slate-700">
+                      Empreendimento
+                    </th>
+                    <th className="px-3 py-3 text-sm font-bold text-slate-700">
+                      Origem
+                    </th>
+                    <th className="px-3 py-3 text-sm font-bold text-slate-700">
+                      Campanha
+                    </th>
+                    <th className="px-3 py-3 text-sm font-bold text-slate-700">
+                      Status
+                    </th>
+                    <th className="px-3 py-3 text-sm font-bold text-slate-700">
+                      Etapa
+                    </th>
+                    <th className="px-3 py-3 text-sm font-bold text-slate-700">
+                      Próxima ação
+                    </th>
+                    <th className="px-3 py-3 text-sm font-bold text-slate-700">
+                      Ação
+                    </th>
                   </tr>
                 </thead>
 
                 <tbody>
                   {leadsFiltrados.map((lead) => (
                     <tr key={lead.id} className="border-b border-slate-100">
-                      <td className="px-3 py-3 text-sm text-slate-700">{lead.nome}</td>
-                      <td className="px-3 py-3 text-sm text-slate-700">{lead.telefone || "-"}</td>
-                      <td className="px-3 py-3 text-sm text-slate-700">{lead.empreendimento || "-"}</td>
-                      <td className="px-3 py-3 text-sm text-slate-700">{lead.origem || "-"}</td>
-                      <td className="px-3 py-3 text-sm text-slate-700">{lead.campanha || "-"}</td>
-                      <td className="px-3 py-3 text-sm text-slate-700">{lead.status_lead || "-"}</td>
-                      <td className="px-3 py-3 text-sm text-slate-700">{lead.etapa_funil || "-"}</td>
-                      <td className="px-3 py-3 text-sm text-slate-700">{lead.proxima_acao || "-"}</td>
+                      <td className="px-3 py-3 text-sm text-slate-700">
+                        {lead.nome}
+                      </td>
+                      <td className="px-3 py-3 text-sm text-slate-700">
+                        {lead.telefone || "-"}
+                      </td>
+                      <td className="px-3 py-3 text-sm text-slate-700">
+                        {lead.empreendimento || "-"}
+                      </td>
+                      <td className="px-3 py-3 text-sm text-slate-700">
+                        {lead.origem || "-"}
+                      </td>
+                      <td className="px-3 py-3 text-sm text-slate-700">
+                        {lead.campanha || "-"}
+                      </td>
+                      <td className="px-3 py-3 text-sm text-slate-700">
+                        {lead.status_lead || "-"}
+                      </td>
+                      <td className="px-3 py-3 text-sm text-slate-700">
+                        {lead.etapa_funil || "-"}
+                      </td>
+                      <td className="px-3 py-3 text-sm text-slate-700">
+                        {lead.proxima_acao || "-"}
+                      </td>
                       <td className="px-3 py-3 text-sm">
                         <button
-  onClick={() => router.push(`/crm/${lead.id}`)}
-  className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-700"
->
-  Abrir lead
-</button>
+                          onClick={() => router.push(`/crm/${lead.id}`)}
+                          className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-700"
+                        >
+                          Abrir lead
+                        </button>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+
+              {leadsFiltrados.length === 0 ? (
+                <div className="py-6 text-sm text-slate-500">
+                  Nenhum lead encontrado com os filtros atuais.
+                </div>
+              ) : null}
             </div>
           )}
         </section>

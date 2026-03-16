@@ -9,38 +9,32 @@ export default function Home() {
   const [logado, setLogado] = useState(false);
   const [carregado, setCarregado] = useState(false);
 
-  const cardsBase = [
-    {
-      titulo: "CRM",
-      descricao: "Leads, tarefas, funil e acompanhamento comercial.",
-      status: "Módulo comercial",
-      href: "/crm",
-    },
-    {
-      titulo: "Minhas Tarefas",
-      descricao: "Tarefas, retornos, prazos e pendências.",
-      status: "Organização diária",
-      href: "/agenda",
-    },
-    {
-      titulo: "Minha Agenda",
-      descricao: "Visitas, compromissos e atividades futuras.",
-      status: "Organização diária",
-      href: "/minha-agenda",
-    },
-    {
-      titulo: "Diário de Bordo",
-      descricao: "Registro diário das atividades comerciais.",
-      status: "Controle operacional",
-      href: "/diario",
-    },
-    {
-      titulo: "Fechamentos",
-      descricao: "Controle dos fechamentos e evolução comercial.",
-      status: "Resultados comerciais",
-      href: "/fechamentos",
-    },
-  ];
+const cardsBase = [
+  {
+    titulo: "CRM",
+    descricao: "Leads, tarefas, funil e acompanhamento comercial.",
+    status: "Módulo comercial",
+    href: "/crm",
+  },
+  {
+    titulo: "Minha Agenda",
+    descricao: "Visitas, compromissos e atividades futuras.",
+    status: "Organização diária",
+    href: "/minha-agenda",
+  },
+  {
+    titulo: "Diário de Bordo",
+    descricao: "Registro diário das atividades comerciais.",
+    status: "Controle operacional",
+    href: "/diario",
+  },
+  {
+    titulo: "Fechamentos",
+    descricao: "Controle dos fechamentos e evolução comercial.",
+    status: "Resultados comerciais",
+    href: "/fechamentos",
+  },
+];
 
   const cards =
     perfil === "diretoria" || perfil === "admin"
