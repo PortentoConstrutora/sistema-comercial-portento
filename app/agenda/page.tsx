@@ -194,17 +194,17 @@ async function concluirTarefa(id: number) {
     <main className="min-h-screen bg-slate-100 px-4 py-8 md:px-8">
       <div className="mx-auto max-w-7xl">
         <section className="mb-8 rounded-3xl bg-slate-900 px-6 py-8 text-white shadow-xl md:px-10">
-          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-amber-300">
-            Tarefas
-          </p>
+         <p className="text-xs font-semibold uppercase tracking-[0.35em] text-amber-300">
+  CRM
+</p>
 
-          <h1 className="mt-3 text-3xl font-bold md:text-5xl">
-            Minhas Tarefas
-          </h1>
+<h1 className="mt-3 text-3xl font-bold md:text-5xl">
+  Tarefas CRM
+</h1>
 
-          <p className="mt-4 text-sm text-slate-200 md:text-base">
-            Acompanhamento de tarefas, prazos, retornos e pendências.
-          </p>
+<p className="mt-4 text-sm text-slate-200 md:text-base">
+  Pendências, retornos, prazos e próximas ações ligadas aos leads do CRM.
+</p>
 
           <p className="mt-4 text-sm text-slate-300">
             Usuário logado: <strong>{nomeUsuario || "Carregando..."}</strong>

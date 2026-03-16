@@ -48,7 +48,7 @@ export default function RootLayout({
   const linksBase = [
     { label: "Início", href: "/" },
     { label: "CRM", href: "/crm" },
-    { label: "Minhas Tarefas", href: "/agenda" },
+    { label: "Tarefas CRM", href: "/agenda" },
     { label: "Minha Agenda", href: "/minha-agenda" },
     { label: "Diário", href: "/diario" },
     { label: "Fechamentos", href: "/fechamentos" },
