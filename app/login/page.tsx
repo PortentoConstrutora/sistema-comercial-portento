@@ -56,10 +56,7 @@ export default function LoginPage() {
 
       const perfilNormalizado = String(data.perfil || "").toLowerCase();
 
-      window.location.href =
-        perfilNormalizado === "diretoria" || perfilNormalizado === "admin"
-          ? "/diretoria"
-          : "/crm";
+      window.location.href = "/";
     } catch (e) {
       console.error(e);
       setErro("Erro ao entrar no sistema.");
