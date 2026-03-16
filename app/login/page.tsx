@@ -1,12 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { supabase } from "../lib/supabase";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [usuario, setUsuario] = useState("");
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState("");
@@ -58,11 +56,10 @@ export default function LoginPage() {
 
       const perfilNormalizado = String(data.perfil || "").toLowerCase();
 
-      if (perfilNormalizado === "diretoria" || perfilNormalizado === "admin") {
-        router.push("/diretoria");
-      } else {
-        router.push("/crm");
-      }
+      window.location.href =
+        perfilNormalizado === "diretoria" || perfilNormalizado === "admin"
+          ? "/diretoria"
+          : "/crm";
     } catch (e) {
       console.error(e);
       setErro("Erro ao entrar no sistema.");

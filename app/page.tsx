@@ -8,32 +8,45 @@ export default function Home() {
   const [perfil, setPerfil] = useState("");
   const [logado, setLogado] = useState(false);
 
-  const cards = [
-    {
-      titulo: "CRM",
-      descricao: "Leads, tarefas, funil e acompanhamento comercial.",
-      status: "Módulo comercial",
-      href: "/crm",
-    },
-    {
-      titulo: "Minhas Tarefas",
-      descricao: "Tarefas, retornos, prazos e pendências.",
-      status: "Organização diária",
-      href: "/agenda",
-    },
-    {
-      titulo: "Diário de Bordo",
-      descricao: "Registro diário das atividades comerciais.",
-      status: "Controle operacional",
-      href: "/diario",
-    },
-    {
-      titulo: "Fechamentos",
-      descricao: "Controle dos fechamentos e evolução comercial.",
-      status: "Resultados comerciais",
-      href: "/fechamentos",
-    },
-  ];
+const cardsBase = [
+  {
+    titulo: "CRM",
+    descricao: "Leads, tarefas, funil e acompanhamento comercial.",
+    status: "Módulo comercial",
+    href: "/crm",
+  },
+  {
+    titulo: "Minhas Tarefas",
+    descricao: "Tarefas, retornos, prazos e pendências.",
+    status: "Organização diária",
+    href: "/agenda",
+  },
+  {
+    titulo: "Diário de Bordo",
+    descricao: "Registro diário das atividades comerciais.",
+    status: "Controle operacional",
+    href: "/diario",
+  },
+  {
+    titulo: "Fechamentos",
+    descricao: "Controle dos fechamentos e evolução comercial.",
+    status: "Resultados comerciais",
+    href: "/fechamentos",
+  },
+];
+
+const cards =
+  perfil === "diretoria" || perfil === "admin"
+    ? [
+        ...cardsBase,
+        {
+          titulo: "Diretoria",
+          descricao: "Comparativos, gráficos, funil e visão executiva do comercial.",
+          status: "Acesso executivo",
+          href: "/diretoria",
+        },
+      ]
+    : cardsBase;
 
   useEffect(() => {
     const usuarioSalvo = localStorage.getItem("portento_usuario") || "";
