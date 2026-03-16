@@ -47,10 +47,10 @@ const cards = [
     href: "/agenda",
   },
   {
-    titulo: "Minha Agenda",
-    descricao: "Visitas, compromissos e atividades futuras.",
-    href: "/agenda",
-  },
+  titulo: "Minha Agenda",
+  descricao: "Visitas, compromissos e atividades futuras.",
+  href: "/minha-agenda",
+},
   {
     titulo: "Diário de Bordo",
     descricao: "Registro diário das atividades do gestor.",
