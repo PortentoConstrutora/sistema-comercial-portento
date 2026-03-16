@@ -29,12 +29,6 @@ export default function RootLayout({
     setPerfil(perfilSalvo);
     setLogado(logadoSalvo);
     setCarregado(true);
-
-    const paginasPublicas = ["/login"];
-
-    if (!logadoSalvo && !paginasPublicas.includes(pathname)) {
-      window.location.href = "/login";
-    }
   }, [pathname]);
 
   function sairDoSistema() {
@@ -51,16 +45,6 @@ export default function RootLayout({
     window.location.href = "/login";
   }
 
-  if (!carregado) {
-    return (
-      <html lang="pt-BR">
-        <body className="bg-slate-100 text-slate-900" />
-      </html>
-    );
-  }
-
-  const mostrarLayoutPrivado = logado && pathname !== "/login";
-
   const linksBase = [
     { label: "Início", href: "/" },
     { label: "CRM", href: "/crm" },
@@ -72,16 +56,16 @@ export default function RootLayout({
 
   const links =
     perfil === "diretoria" || perfil === "admin"
-      ? [
-          ...linksBase,
-          { label: "Diretoria", href: "/diretoria" },
-        ]
+      ? [...linksBase, { label: "Diretoria", href: "/diretoria" }]
       : linksBase;
+
+  const paginaLogin = pathname === "/login";
+  const mostrarHeader = carregado && logado && !paginaLogin;
 
   return (
     <html lang="pt-BR">
       <body className="bg-slate-100 text-slate-900">
-        {mostrarLayoutPrivado ? (
+        {mostrarHeader ? (
           <header className="border-b border-slate-200 bg-white shadow-sm">
             <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 md:flex-row md:items-center md:justify-between md:px-8">
               <div>

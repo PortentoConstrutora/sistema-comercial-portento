@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 
 export default function LoginPage() {
@@ -9,6 +8,14 @@ export default function LoginPage() {
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(false);
+
+  useEffect(() => {
+    const logado = localStorage.getItem("portento_logado") === "sim";
+
+    if (logado) {
+      window.location.href = "/";
+    }
+  }, []);
 
   async function entrarNoSistema(e?: React.FormEvent) {
     e?.preventDefault();
@@ -50,11 +57,9 @@ export default function LoginPage() {
       }
 
       localStorage.setItem("portento_logado", "sim");
-      localStorage.setItem("portento_usuario", data.usuario);
-      localStorage.setItem("portento_nome", data.nome);
-      localStorage.setItem("portento_perfil", data.perfil);
-
-      const perfilNormalizado = String(data.perfil || "").toLowerCase();
+      localStorage.setItem("portento_usuario", data.usuario || "");
+      localStorage.setItem("portento_nome", data.nome || "");
+      localStorage.setItem("portento_perfil", data.perfil || "");
 
       window.location.href = "/";
     } catch (e) {
@@ -119,15 +124,6 @@ export default function LoginPage() {
               {carregando ? "Entrando..." : "Entrar"}
             </button>
           </form>
-        </div>
-
-        <div className="mt-4 text-center">
-          <Link
-            href="/"
-            className="text-sm font-semibold text-slate-700 hover:text-slate-900"
-          >
-            Voltar para a página inicial
-          </Link>
         </div>
       </div>
     </main>
