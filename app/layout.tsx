@@ -5,6 +5,9 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import "./globals.css";
 
+// Ajuste o caminho se necessário:
+import NotificationBell from "@/app/components/NotificationBell";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -91,6 +94,8 @@ export default function RootLayout({
                 <div className="ml-2 rounded-xl bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-700">
                   {nome || usuario || "Usuário"} {perfil ? `• ${perfil}` : ""}
                 </div>
+
+                <NotificationBell />
 
                 <button
                   onClick={sairDoSistema}
