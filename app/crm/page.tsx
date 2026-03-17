@@ -25,6 +25,8 @@ export default function MeusLeadsNovos() {
   const [diasRetorno, setDiasRetorno] = useState<number>(2);
 const [dataRetorno, setDataRetorno] = useState<string>("");
   const [observacao, setObservacao] = useState<string>("");
+  const [proximaAcao, setProximaAcao] = useState<string>("Fazer retorno");
+const [proximaAcaoCustom, setProximaAcaoCustom] = useState<string>("");
 
   const usuario = (typeof window !== "undefined" && localStorage.getItem("portento_usuario")) || "sistema";
 
@@ -55,12 +57,16 @@ const [dataRetorno, setDataRetorno] = useState<string>("");
   async function handleConcluirConfirm() {
     if (!concluirId) return;
     try {
-  const payload = {
+const payload = {
   contatoSucesso,
   observacao,
   criarRetorno,
   diasRetorno,
   dataRetorno,
+  proximaAcao:
+    proximaAcao === "Outra"
+      ? proximaAcaoCustom.trim()
+      : proximaAcao,
 };
 
       const res = await fetch(`/api/leads/${concluirId}/concluir`, {
@@ -84,6 +90,8 @@ const [dataRetorno, setDataRetorno] = useState<string>("");
       // Fechar modal e resetar
       setConcluirId(null);
       setContatoSucesso(true);
+      setProximaAcao("Fazer retorno");
+setProximaAcaoCustom("");
       setCriarRetorno(true);
       setDiasRetorno(2);
 setDataRetorno("");
@@ -234,6 +242,33 @@ setObservacao("");
               </div>
 
               <div>
+  <label className="block text-sm font-medium text-slate-700">Próxima ação</label>
+
+  <select
+    value={proximaAcao}
+    onChange={(e) => setProximaAcao(e.target.value)}
+    className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
+  >
+    <option value="Fazer retorno">Fazer retorno</option>
+    <option value="Nova tentativa de contato">Nova tentativa de contato</option>
+    <option value="Agendar visita">Agendar visita</option>
+    <option value="Enviar proposta">Enviar proposta</option>
+    <option value="Aguardar cliente">Aguardar cliente</option>
+    <option value="Outra">Outra</option>
+  </select>
+
+  {proximaAcao === "Outra" && (
+    <input
+      type="text"
+      value={proximaAcaoCustom}
+      onChange={(e) => setProximaAcaoCustom(e.target.value)}
+      placeholder="Digite a próxima ação"
+      className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
+    />
+  )}
+</div>
+
+              <div>
                 <label className="inline-flex items-center gap-2">
                   <input type="checkbox" checked={criarRetorno} onChange={(e) => setCriarRetorno(e.target.checked)} />
                   <span className="text-sm">Criar tarefa de retorno</span>
@@ -269,7 +304,16 @@ setObservacao("");
             </div>
 
             <div className="mt-6 flex justify-end gap-3">
-              <button onClick={() => setConcluirId(null)} className="px-4 py-2 rounded-lg border">
+              <button onClick={() => {
+  setConcluirId(null);
+  setContatoSucesso(true);
+  setCriarRetorno(true);
+  setDiasRetorno(2);
+  setDataRetorno("");
+  setObservacao("");
+  setProximaAcao("Fazer retorno");
+  setProximaAcaoCustom("");
+}}className="px-4 py-2 rounded-lg border">
                 Cancelar
               </button>
               <button

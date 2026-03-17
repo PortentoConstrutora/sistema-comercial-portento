@@ -68,14 +68,16 @@ const dataRetorno = body.dataRetorno ?? "";
       "sistema";
 
     // 1) Atualizar lead: marcar primeiro_contato e ultima_atualizacao
-    const { error: leadError } = await supabase
-      .from("crm_leads")
-      .update({
-        primeiro_contato: true,
-        status_lead: contatoSucesso ? "Em andamento" : "Em andamento",
-        ultima_atualizacao: new Date().toISOString(),
-      })
-      .eq("id", idLead);
+   const { error: leadError } = await supabase
+  .from("crm_leads")
+  .update({
+    primeiro_contato: true,
+    status_lead: "Em andamento",
+    etapa_funil: "Primeiro Contato",
+    proxima_acao: contatoSucesso ? "Fazer retorno" : "Nova tentativa de contato",
+    ultima_atualizacao: new Date().toISOString(),
+  })
+  .eq("id", idLead);
 
     if (leadError) {
       console.error("Erro atualizando lead:", leadError);
@@ -83,9 +85,11 @@ const dataRetorno = body.dataRetorno ?? "";
     }
 
     // 2) Gravar histórico
-    const descricao = `${contatoSucesso ? "Contato inicial: sucesso." : "Tentativa de contato."} ${
-      observacao ? `Observação: ${observacao}` : ""
-    }`;
+ const descricao = `${
+  contatoSucesso ? "Contato inicial: sucesso." : "Tentativa de contato."
+} Lead atualizado para status "Em andamento", etapa "Primeiro Contato" e próxima ação "${
+  contatoSucesso ? "Fazer retorno" : "Nova tentativa de contato"
+}". ${observacao ? `Observação: ${observacao}` : ""}`;
 
     const { error: histError } = await supabase.from("crm_historico").insert({
       lead_id: idLead,

@@ -26,6 +26,20 @@ export default function TarefasCrmPage() {
   const [filtroStatus, setFiltroStatus] = useState("todos");
   const [salvandoId, setSalvandoId] = useState<number | null>(null);
 
+  const [modalTarefaId, setModalTarefaId] = useState<number | null>(null);
+const [modalTarefaTipo, setModalTarefaTipo] = useState<string>("");
+
+const [modalResultado, setModalResultado] = useState("Consegui falar com o cliente");
+
+const [modalProximaAcao, setModalProximaAcao] = useState("Fazer retorno");
+const [modalProximaAcaoCustom, setModalProximaAcaoCustom] = useState("");
+
+const [modalObservacao, setModalObservacao] = useState("");
+
+const [modalCriarNovaTarefa, setModalCriarNovaTarefa] = useState(true);
+const [modalNovoTipoTarefa, setModalNovoTipoTarefa] = useState("Retorno");
+const [modalNovaDataTarefa, setModalNovaDataTarefa] = useState("");
+
   useEffect(() => {
     const logado = localStorage.getItem("portento_logado");
     const nome = localStorage.getItem("portento_nome");
@@ -78,72 +92,121 @@ export default function TarefasCrmPage() {
     return tarefa.status;
   }
 
-  async function concluirTarefa(id: number) {
-    setSalvandoId(id);
+ function abrirModalConclusao(tarefa: Tarefa) {
+  setModalTarefaId(tarefa.id);
+  setModalTarefaTipo(tarefa.tipo);
 
-    const tarefaAtual = tarefas.find((t) => t.id === id);
-    const usuarioAtual = localStorage.getItem("portento_usuario") || "";
+  if (tarefa.tipo === "Primeiro contato") {
+    setModalResultado("Consegui falar com o cliente");
+    setModalProximaAcao("Fazer retorno");
+    setModalNovoTipoTarefa("Retorno");
+  } else if (tarefa.tipo === "Retorno") {
+    setModalResultado("Cliente pediu retorno");
+    setModalProximaAcao("Fazer retorno");
+    setModalNovoTipoTarefa("Retorno");
+ } else if (tarefa.tipo === "Confirmar visita") {
+  setModalResultado("Cliente quer visita");
+  setModalProximaAcao("Confirmar visita");
+  setModalNovoTipoTarefa("Confirmar visita");
+} else {
+    setModalResultado("Consegui falar com o cliente");
+    setModalProximaAcao("Fazer retorno");
+    setModalNovoTipoTarefa("Retorno");
+  }
 
-    if (!tarefaAtual) {
-      alert("Tarefa não encontrada.");
-      setSalvandoId(null);
-      return;
-    }
-
-    const { error } = await supabase
-      .from("crm_tarefas")
-      .update({
-        status: "Concluída",
-        atualizado_em: new Date().toISOString(),
-      })
-      .eq("id", id);
-
-    if (error) {
-      console.error(error);
-      alert("Erro ao concluir tarefa.");
-      setSalvandoId(null);
-      return;
-    }
-
-    let descricaoHistorico = `Tarefa "${tarefaAtual.tipo}" concluída.`;
-
-    if (tarefaAtual.lead_id) {
-    let novoStatusLead = "Em andamento";
-let novaEtapaFunil = "Primeiro Contato";
-let novaProximaAcao = "Fazer retorno";
-
-  if (tarefaAtual.tipo === "Confirmar visita") {
-  novoStatusLead = "Em andamento";
-  novaEtapaFunil = "Agendado";
-  novaProximaAcao = "Realizar visita";
+  setModalProximaAcaoCustom("");
+  setModalObservacao("");
+  setModalCriarNovaTarefa(true);
+  setModalNovaDataTarefa("");
 }
 
-if (tarefaAtual.tipo === "Primeiro contato") {
-  novoStatusLead = "Em andamento";
-  novaEtapaFunil = "Primeiro Contato";
-  novaProximaAcao = "Fazer retorno";
-}
+async function concluirTarefa() {
+  if (!modalTarefaId) return;
 
+  setSalvandoId(modalTarefaId);
+
+  const tarefaAtual = tarefas.find((t) => t.id === modalTarefaId);
+  const usuarioAtual = localStorage.getItem("portento_usuario") || "";
+
+  if (!tarefaAtual) {
+    alert("Tarefa não encontrada.");
+    setSalvandoId(null);
+    return;
+  }
+
+  const proximaAcaoFinal =
+    modalProximaAcao === "Outra"
+      ? modalProximaAcaoCustom.trim()
+      : modalProximaAcao;
+
+  if (!proximaAcaoFinal) {
+    alert("Preencha a próxima ação.");
+    setSalvandoId(null);
+    return;
+  }
+
+  let novaEtapaFunil = "Em atendimento";
+  let novoStatusLead = "Em andamento";
+
+  if (modalResultado === "Tentei e não consegui") {
+    novaEtapaFunil = "Primeiro Contato";
+  }
+
+  if (modalResultado === "Cliente pediu retorno") {
+    novaEtapaFunil = "Em atendimento";
+  }
+
+  if (modalResultado === "Cliente quer visita") {
+    novaEtapaFunil = "Agendado";
+  }
+
+  if (modalResultado === "Cliente pediu proposta") {
+    novaEtapaFunil = "Proposta";
+  }
+
+  if (modalResultado === "Cliente sem interesse") {
+    novaEtapaFunil = "Perdido";
+    novoStatusLead = "Perdido";
+  }
+
+  const { error: tarefaError } = await supabase
+    .from("crm_tarefas")
+    .update({
+      status: "Concluída",
+      observacao: modalObservacao || tarefaAtual.observacao,
+      atualizado_em: new Date().toISOString(),
+    })
+    .eq("id", modalTarefaId);
+
+  if (tarefaError) {
+    console.error(tarefaError);
+    alert("Erro ao concluir tarefa.");
+    setSalvandoId(null);
+    return;
+  }
+
+  if (tarefaAtual.lead_id) {
     const { error: leadError } = await supabase
-  .from("crm_leads")
-  .update({
-    status_lead: novoStatusLead,
-    etapa_funil: novaEtapaFunil,
-    proxima_acao: novaProximaAcao,
-    ultima_atualizacao: new Date().toISOString(),
-  })
-  .eq("id", tarefaAtual.lead_id);
+      .from("crm_leads")
+      .update({
+        status_lead: novoStatusLead,
+        etapa_funil: novaEtapaFunil,
+        proxima_acao: proximaAcaoFinal,
+        ultima_atualizacao: new Date().toISOString(),
+      })
+      .eq("id", tarefaAtual.lead_id);
 
-      if (leadError) {
-        console.error(leadError);
-        alert("A tarefa foi concluída, mas deu erro ao atualizar o lead.");
-        await carregarTarefas();
-        setSalvandoId(null);
-        return;
-      }
-
-      descricaoHistorico += ` Lead atualizado para status "${novoStatusLead}", etapa "${novaEtapaFunil}" e próxima ação "${novaProximaAcao}".`;
+    if (leadError) {
+      console.error(leadError);
+      alert("A tarefa foi concluída, mas deu erro ao atualizar o lead.");
+      await carregarTarefas();
+      setSalvandoId(null);
+      return;
     }
+
+    const descricaoHistorico = `Tarefa "${tarefaAtual.tipo}" concluída com resultado "${modalResultado}". Lead atualizado para status "${novoStatusLead}", etapa "${novaEtapaFunil}" e próxima ação "${proximaAcaoFinal}". ${
+      modalObservacao ? `Observação: ${modalObservacao}` : ""
+    }`;
 
     const { error: historicoError } = await supabase
       .from("crm_historico")
@@ -153,16 +216,63 @@ if (tarefaAtual.tipo === "Primeiro contato") {
         usuario: usuarioAtual,
         tipo_evento: "tarefa_concluida",
         descricao: descricaoHistorico,
+        meta: {
+          resultado: modalResultado,
+          proximaAcao: proximaAcaoFinal,
+          criouNovaTarefa: modalCriarNovaTarefa,
+        },
       });
 
     if (historicoError) {
       console.error(historicoError);
-      alert("A tarefa e o lead foram atualizados, mas deu erro ao gravar histórico.");
+      alert("A tarefa foi concluída e o lead atualizado, mas deu erro ao gravar histórico.");
     }
 
-    await carregarTarefas();
-    setSalvandoId(null);
+    if (modalCriarNovaTarefa) {
+      if (!modalNovaDataTarefa) {
+        alert("Escolha a data da nova tarefa.");
+        setSalvandoId(null);
+        return;
+      }
+
+      const prazoNovaTarefa = new Date(`${modalNovaDataTarefa}T09:00:00`).toISOString();
+
+      const { error: novaTarefaError } = await supabase
+        .from("crm_tarefas")
+        .insert({
+          lead_id: tarefaAtual.lead_id,
+          tipo: modalNovoTipoTarefa,
+          status: "Pendente",
+          prazo: prazoNovaTarefa,
+          observacao: `Nova tarefa criada após conclusão de "${tarefaAtual.tipo}". ${
+            modalObservacao ? modalObservacao : ""
+          }`,
+          gestor: tarefaAtual.gestor || usuarioAtual,
+          criado_em: new Date().toISOString(),
+          atualizado_em: new Date().toISOString(),
+        });
+
+      if (novaTarefaError) {
+        console.error(novaTarefaError);
+        alert("A tarefa foi concluída, mas deu erro ao criar a nova tarefa.");
+      }
+    }
   }
+
+  await carregarTarefas();
+
+  setModalTarefaId(null);
+  setModalTarefaTipo("");
+  setModalResultado("Consegui falar com o cliente");
+  setModalProximaAcao("Fazer retorno");
+  setModalProximaAcaoCustom("");
+  setModalObservacao("");
+  setModalCriarNovaTarefa(true);
+  setModalNovoTipoTarefa("Retorno");
+  setModalNovaDataTarefa("");
+
+  setSalvandoId(null);
+}
 
   const tarefasFiltradas = useMemo(() => {
     return tarefas.filter((tarefa) => {
@@ -296,11 +406,10 @@ if (tarefaAtual.tipo === "Primeiro contato") {
                             </span>
                           ) : (
                             <button
-                              onClick={() => concluirTarefa(tarefa.id)}
-                              disabled={salvandoId === tarefa.id}
-                              className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-700 disabled:opacity-70"
+                              onClick={() => abrirModalConclusao(tarefa)}
+                              className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-700"
                             >
-                              {salvandoId === tarefa.id ? "Salvando..." : "Concluir"}
+                              Concluir
                             </button>
                           )}
                         </td>
@@ -313,6 +422,208 @@ if (tarefaAtual.tipo === "Primeiro contato") {
           )}
         </section>
       </div>
+
+    {modalTarefaId && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div className="w-full max-w-xl rounded-2xl bg-white p-6 shadow-xl">
+      <h2 className="mb-2 text-xl font-bold text-slate-900">
+        Concluir tarefa
+      </h2>
+
+      <p className="text-sm text-slate-600">
+        Tarefa selecionada: <strong>{modalTarefaTipo}</strong>
+      </p>
+
+      <div className="mt-4 space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-slate-700">
+            Resultado da tarefa
+          </label>
+       <select
+  value={modalResultado}
+  onChange={(e) => {
+    const resultado = e.target.value;
+    setModalResultado(resultado);
+
+    if (resultado === "Consegui falar com o cliente") {
+      setModalProximaAcao("Fazer retorno");
+      setModalNovoTipoTarefa("Retorno");
+      setModalCriarNovaTarefa(true);
+    }
+
+    if (resultado === "Tentei e não consegui") {
+      setModalProximaAcao("Nova tentativa de contato");
+      setModalNovoTipoTarefa("Nova tentativa");
+      setModalCriarNovaTarefa(true);
+    }
+
+    if (resultado === "Cliente pediu retorno") {
+      setModalProximaAcao("Fazer retorno");
+      setModalNovoTipoTarefa("Retorno");
+      setModalCriarNovaTarefa(true);
+    }
+
+    if (resultado === "Cliente quer visita") {
+      setModalProximaAcao("Confirmar visita");
+      setModalNovoTipoTarefa("Confirmar visita");
+      setModalCriarNovaTarefa(true);
+    }
+
+    if (resultado === "Cliente pediu proposta") {
+      setModalProximaAcao("Enviar proposta");
+      setModalNovoTipoTarefa("Enviar proposta");
+      setModalCriarNovaTarefa(true);
+    }
+
+    if (resultado === "Cliente sem interesse") {
+      setModalProximaAcao("Encerrar lead");
+      setModalNovoTipoTarefa("Retorno");
+      setModalCriarNovaTarefa(false);
+    }
+  }}
+  className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
+>
+            <option value="Consegui falar com o cliente">
+              Consegui falar com o cliente
+            </option>
+            <option value="Tentei e não consegui">
+              Tentei e não consegui
+            </option>
+            <option value="Cliente pediu retorno">
+              Cliente pediu retorno
+            </option>
+            <option value="Cliente quer visita">
+              Cliente quer visita
+            </option>
+            <option value="Cliente pediu proposta">
+              Cliente pediu proposta
+            </option>
+            <option value="Cliente sem interesse">
+              Cliente sem interesse
+            </option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700">
+            Observação
+          </label>
+          <textarea
+            value={modalObservacao}
+            onChange={(e) => setModalObservacao(e.target.value)}
+            rows={4}
+            className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
+            placeholder="Digite uma observação sobre o andamento"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700">
+            Próxima ação
+          </label>
+          <select
+            value={modalProximaAcao}
+            onChange={(e) => setModalProximaAcao(e.target.value)}
+            className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
+          >
+            <option value="Fazer retorno">Fazer retorno</option>
+            <option value="Nova tentativa de contato">Nova tentativa de contato</option>
+            <option value="Agendar visita">Agendar visita</option>
+            <option value="Confirmar visita">Confirmar visita</option>
+            <option value="Enviar proposta">Enviar proposta</option>
+            <option value="Aguardar cliente">Aguardar cliente</option>
+          <option value="Realizar visita">Realizar visita</option>
+<option value="Encerrar lead">Encerrar lead</option>
+<option value="Outra">Outra</option>
+          </select>
+
+          {modalProximaAcao === "Outra" && (
+            <input
+              type="text"
+              value={modalProximaAcaoCustom}
+              onChange={(e) => setModalProximaAcaoCustom(e.target.value)}
+              placeholder="Digite a próxima ação"
+              className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
+            />
+          )}
+        </div>
+
+        <div className="rounded-xl border border-slate-200 p-4">
+          <label className="inline-flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={modalCriarNovaTarefa}
+              onChange={(e) => setModalCriarNovaTarefa(e.target.checked)}
+            />
+            <span className="text-sm font-medium text-slate-700">
+              Criar nova tarefa para a próxima ação
+            </span>
+          </label>
+
+          {modalCriarNovaTarefa && (
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <div>
+                <label className="block text-sm font-medium text-slate-700">
+                  Tipo da próxima tarefa
+                </label>
+                <select
+                  value={modalNovoTipoTarefa}
+                  onChange={(e) => setModalNovoTipoTarefa(e.target.value)}
+                  className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
+                >
+                  <option value="Retorno">Retorno</option>
+                  <option value="Nova tentativa">Nova tentativa</option>
+                  <option value="Confirmar visita">Confirmar visita</option>
+                  <option value="Visita">Visita</option>
+                  <option value="Enviar proposta">Enviar proposta</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700">
+                  Data da próxima tarefa
+                </label>
+                <input
+                  type="date"
+                  value={modalNovaDataTarefa}
+                  min={new Date().toISOString().split("T")[0]}
+                  onChange={(e) => setModalNovaDataTarefa(e.target.value)}
+                  className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-6 flex justify-end gap-3">
+        <button
+          onClick={() => {
+            setModalTarefaId(null);
+            setModalTarefaTipo("");
+            setModalResultado("Consegui falar com o cliente");
+            setModalProximaAcao("Fazer retorno");
+            setModalProximaAcaoCustom("");
+            setModalObservacao("");
+            setModalCriarNovaTarefa(true);
+            setModalNovoTipoTarefa("Retorno");
+            setModalNovaDataTarefa("");
+          }}
+          className="rounded-lg border px-4 py-2"
+        >
+          Cancelar
+        </button>
+
+        <button
+  onClick={concluirTarefa}
+  className="rounded-lg bg-slate-900 px-4 py-2 text-white hover:bg-slate-800"
+>
+  {salvandoId === modalTarefaId ? "Salvando..." : "Continuar"}
+</button>
+      </div>
+    </div>
+  </div>
+)}
     </main>
   );
 }
