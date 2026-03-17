@@ -60,21 +60,46 @@ export default function NotificationBell() {
     }
   }
 
-  function handleItemClick(n: NotificationItem) {
-    // marca lido e navega se houver target na payload
-    markRead(n.id);
+async function handleItemClick(n: NotificationItem) {
+  try {
+    const res = await fetch(`/api/notifications/${n.id}/read`, {
+      method: "PATCH",
+      headers: { "x-usuario": usuario },
+    });
+
+    if (!res.ok) {
+      console.error("Erro marcando notificação como lida:", await res.text());
+      return;
+    }
+
+    setItems((prev) =>
+      prev.map((item) =>
+        item.id === n.id ? { ...item, read: true } : item
+      )
+    );
+
     const payload = n.data || {};
-    // esperar campos possíveis: { leadId, tarefaId, url }
+
+    setOpen(false);
+
     if (payload.url) {
       window.location.href = payload.url;
-    } else if (payload.leadId) {
-      // abrir detalhe do lead (exemplo)
-      window.location.href = `/crm/leads/${payload.leadId}`; // ajuste conforme sua rota de detalhe
-    } else if (payload.tarefaId) {
-      window.location.href = `/crm/tarefas/${payload.tarefaId}`; // ajuste conforme
+      return;
     }
-    setOpen(false);
+
+if (payload.tarefaId) {
+  window.location.href = `/tarefas-crm`;
+  return;
+}
+
+if (payload.leadId) {
+  window.location.href = `/crm/meus-leads`;
+  return;
+}
+  } catch (err) {
+    console.error(err);
   }
+}
 
   return (
     <div className="relative">

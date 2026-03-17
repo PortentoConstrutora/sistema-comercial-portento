@@ -1,323 +1,261 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { supabase } from "../lib/supabase";
+import { useEffect, useState } from "react";
 
 type Lead = {
   id: number;
-  id_lead: string | null;
   nome: string;
-  telefone: string | null;
-  empreendimento: string | null;
-  origem: string | null;
-  campanha: string | null;
-  gestor: string | null;
-  status_lead: string | null;
-  etapa_funil: string | null;
-  proxima_acao: string | null;
+  telefone?: string;
+  campanha?: string | null;
+  empreendimento?: string | null;
+  data_chegada?: string;
+  gestor?: string | null;
+  status_lead?: string;
+  primeiro_contato?: boolean;
 };
 
-export default function CrmPage() {
-  const router = useRouter();
-  const [nomeUsuario, setNomeUsuario] = useState("");
-  const [perfil, setPerfil] = useState("");
-  const [usuarioLogado, setUsuarioLogado] = useState("");
-  const [busca, setBusca] = useState("");
-  const [filtroStatus, setFiltroStatus] = useState("todos");
+export default function MeusLeadsNovos() {
   const [leads, setLeads] = useState<Lead[]>([]);
-  const [carregando, setCarregando] = useState(true);
+  const [loading, setLoading] = useState(true);
+
+  // Modal state
+  const [concluirId, setConcluirId] = useState<number | null>(null);
+  const [contatoSucesso, setContatoSucesso] = useState<boolean>(true);
+  const [criarRetorno, setCriarRetorno] = useState<boolean>(true);
+  const [diasRetorno, setDiasRetorno] = useState<number>(2);
+  const [observacao, setObservacao] = useState<string>("");
+
+  const usuario = (typeof window !== "undefined" && localStorage.getItem("portento_usuario")) || "sistema";
 
   useEffect(() => {
-    const logado = localStorage.getItem("portento_logado");
-    const nome = localStorage.getItem("portento_nome");
-    const perfilSalvo = localStorage.getItem("portento_perfil");
-    const usuario = localStorage.getItem("portento_usuario");
+    fetchLeads();
+  }, []);
 
-    if (logado !== "sim") {
-      router.push("/login");
-      return;
-    }
-
-    setNomeUsuario(nome || "");
-    setPerfil(perfilSalvo || "");
-    setUsuarioLogado((usuario || "").toLowerCase());
-  }, [router]);
-
-  useEffect(() => {
-    async function carregarLeads() {
-      setCarregando(true);
-
-      const { data, error } = await supabase
-        .from("crm_leads")
-        .select("*")
-        .order("id", { ascending: true });
-
-      if (error) {
-        console.error(error);
+  async function fetchLeads() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/leads/novos");
+      if (!res.ok) {
+        console.error("Erro ao buscar leads:", await res.text());
         setLeads([]);
-        setCarregando(false);
+        setLoading(false);
+        return;
+      }
+      const data = await res.json();
+      setLeads(data || []);
+    } catch (err) {
+      console.error("Erro fetchLeads:", err);
+      setLeads([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleConcluirConfirm() {
+    if (!concluirId) return;
+    try {
+      const payload = {
+        contatoSucesso,
+        observacao,
+        criarRetorno,
+        diasRetorno,
+      };
+
+      const res = await fetch(`/api/leads/${concluirId}/concluir`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-usuario": usuario,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const json = await res.json();
+      if (!res.ok) {
+        console.error("Erro na API:", json);
+        alert("Erro ao concluir lead: " + (json.error || "Erro desconhecido"));
         return;
       }
 
-      setLeads(data || []);
-      setCarregando(false);
+      // Atualiza UI: remover lead concluído da lista
+      setLeads((prev) => prev.filter((l) => l.id !== concluirId));
+      // Fechar modal e resetar
+      setConcluirId(null);
+      setContatoSucesso(true);
+      setCriarRetorno(true);
+      setDiasRetorno(2);
+      setObservacao("");
+      alert("Contato concluído com sucesso." + (json.tarefa ? " Tarefa criada." : ""));
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao executar requisição.");
     }
-
-    carregarLeads();
-  }, []);
-
-  const leadsFiltrados = useMemo(() => {
-    return leads.filter((lead) => {
-      const termo = busca.trim().toLowerCase();
-
-      const matchBusca =
-        lead.nome?.toLowerCase().includes(termo) ||
-        (lead.telefone || "").toLowerCase().includes(termo) ||
-        (lead.empreendimento || "").toLowerCase().includes(termo) ||
-        (lead.origem || "").toLowerCase().includes(termo);
-
-      const matchStatus =
-        filtroStatus === "todos" ||
-        (lead.status_lead || "").toLowerCase() === filtroStatus.toLowerCase();
-
-      if (perfil === "gestor") {
-        return (
-          matchBusca &&
-          matchStatus &&
-          (lead.gestor || "").toLowerCase() === usuarioLogado
-        );
-      }
-
-      return matchBusca && matchStatus;
-    });
-  }, [leads, busca, filtroStatus, perfil, usuarioLogado]);
-
-  const totalLeads = leadsFiltrados.length;
-  const totalNovos = leadsFiltrados.filter((l) => l.status_lead === "Novo").length;
-  const totalAndamento = leadsFiltrados.filter(
-    (l) => l.status_lead === "Em andamento"
-  ).length;
-  const totalAgendados = leadsFiltrados.filter(
-    (l) => l.status_lead === "Agendado"
-  ).length;
+  }
 
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-8 md:px-8">
       <div className="mx-auto max-w-7xl">
-        <section className="mb-8 rounded-3xl bg-slate-900 px-6 py-8 text-white shadow-xl md:px-10">
-          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-amber-300">
-            CRM
-          </p>
-
-          <h1 className="mt-3 text-3xl font-bold md:text-5xl">
-            CRM Comercial
-          </h1>
-
+        <section className="mb-6 rounded-3xl bg-slate-900 px-6 py-8 text-white shadow-xl md:px-10">
+          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-amber-300">CRM</p>
+          <h1 className="mt-3 text-3xl font-bold md:text-5xl">Meus Leads — Novos</h1>
           <p className="mt-4 text-sm text-slate-200 md:text-base">
-            Gestão de leads, tarefas do CRM, etapas do funil, acompanhamento e
-            próximas ações.
-          </p>
-
-          <p className="mt-4 text-sm text-slate-300">
-            Usuário logado: <strong>{nomeUsuario || "Carregando..."}</strong>
+            Leads novos com prioridade de primeiro contato. Conclua o contato inicial aqui.
           </p>
         </section>
-
-        <section className="mb-6 grid gap-4 md:grid-cols-2">
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="mb-6 grid gap-6 md:grid-cols-2">
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">
               CRM
             </p>
-            <h2 className="mt-2 text-xl font-bold text-slate-900">Leads</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              Gestão dos leads, etapas do funil, acompanhamento comercial e
-              atualização do atendimento.
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">
-              CRM
-            </p>
-            <h2 className="mt-2 text-xl font-bold text-slate-900">
-              Tarefas do CRM
+            <h2 className="mt-2 text-2xl font-bold text-slate-900">
+              Meus Leads
             </h2>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              Pendências, retornos, primeiro contato e próximas ações ligadas
-              aos leads.
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              Veja todos os leads e acompanhe status, etapa do funil e andamento comercial.
             </p>
 
-            <Link
-              href="/agenda"
-              className="mt-4 inline-block rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700"
-            >
-              Abrir tarefas do CRM
-            </Link>
-          </div>
-        </section>
-
-        <div className="mb-6">
-          <button
-            onClick={() => router.push("/crm/novo")}
-            className="rounded-xl bg-amber-400 px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-amber-300"
-          >
-            Novo Lead
-          </button>
-        </div>
-
-        <section className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-2xl bg-white p-5 shadow-sm">
-            <p className="text-sm text-slate-500">Total de leads</p>
-            <h2 className="mt-2 text-3xl font-bold text-slate-900">
-              {totalLeads}
-            </h2>
-          </div>
-
-          <div className="rounded-2xl bg-white p-5 shadow-sm">
-            <p className="text-sm text-slate-500">Novos</p>
-            <h2 className="mt-2 text-3xl font-bold text-slate-900">
-              {totalNovos}
-            </h2>
-          </div>
-
-          <div className="rounded-2xl bg-white p-5 shadow-sm">
-            <p className="text-sm text-slate-500">Em andamento</p>
-            <h2 className="mt-2 text-3xl font-bold text-slate-900">
-              {totalAndamento}
-            </h2>
-          </div>
-
-          <div className="rounded-2xl bg-white p-5 shadow-sm">
-            <p className="text-sm text-slate-500">Agendados</p>
-            <h2 className="mt-2 text-3xl font-bold text-slate-900">
-              {totalAgendados}
-            </h2>
-          </div>
-        </section>
-
-        <section className="mb-6 rounded-2xl bg-white p-5 shadow-sm">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-slate-700">
-                Buscar lead
-              </label>
-              <input
-                type="text"
-                placeholder="Nome, telefone, empreendimento ou origem"
-                value={busca}
-                onChange={(e) => setBusca(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-slate-700">
-                Filtrar por status
-              </label>
-              <select
-                value={filtroStatus}
-                onChange={(e) => setFiltroStatus(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none"
+            <div className="mt-5">
+              <a
+                href="/crm/todos-leads"
+                className="inline-block rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700"
               >
-                <option value="todos">Todos</option>
-                <option value="novo">Novo</option>
-                <option value="em andamento">Em andamento</option>
-                <option value="agendado">Agendado</option>
-                <option value="perdido">Perdido</option>
-              </select>
+                Ver todos os leads
+              </a>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">
+              CRM
+            </p>
+            <h2 className="mt-2 text-2xl font-bold text-slate-900">
+              Tarefas CRM
+            </h2>
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              Acompanhe pendências, retornos e próximas ações ligadas aos leads.
+            </p>
+
+            <div className="mt-5">
+              <a
+                href="/tarefas-crm"
+                className="inline-block rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700"
+              >
+                Abrir tarefas do CRM
+              </a>
             </div>
           </div>
         </section>
 
         <section className="rounded-2xl bg-white p-5 shadow-sm">
-          {carregando ? (
+          {loading ? (
             <p className="text-slate-600">Carregando leads...</p>
+          ) : leads.length === 0 ? (
+            <p className="text-slate-600">Nenhum lead novo no momento.</p>
           ) : (
             <div className="overflow-auto">
-              <table className="w-full min-w-[1100px] border-collapse">
+              <table className="w-full min-w-[900px] border-collapse">
                 <thead>
                   <tr className="border-b border-slate-200 text-left">
-                    <th className="px-3 py-3 text-sm font-bold text-slate-700">
-                      Nome
-                    </th>
-                    <th className="px-3 py-3 text-sm font-bold text-slate-700">
-                      Telefone
-                    </th>
-                    <th className="px-3 py-3 text-sm font-bold text-slate-700">
-                      Empreendimento
-                    </th>
-                    <th className="px-3 py-3 text-sm font-bold text-slate-700">
-                      Origem
-                    </th>
-                    <th className="px-3 py-3 text-sm font-bold text-slate-700">
-                      Campanha
-                    </th>
-                    <th className="px-3 py-3 text-sm font-bold text-slate-700">
-                      Status
-                    </th>
-                    <th className="px-3 py-3 text-sm font-bold text-slate-700">
-                      Etapa
-                    </th>
-                    <th className="px-3 py-3 text-sm font-bold text-slate-700">
-                      Próxima ação
-                    </th>
-                    <th className="px-3 py-3 text-sm font-bold text-slate-700">
-                      Ação
-                    </th>
+                    <th className="px-3 py-3 text-sm font-bold text-slate-700">Nome</th>
+                    <th className="px-3 py-3 text-sm font-bold text-slate-700">Telefone</th>
+                    <th className="px-3 py-3 text-sm font-bold text-slate-700">Data Chegada</th>
+                    <th className="px-3 py-3 text-sm font-bold text-slate-700">Campanha</th>
+                    <th className="px-3 py-3 text-sm font-bold text-slate-700">Ação</th>
                   </tr>
                 </thead>
 
                 <tbody>
-                  {leadsFiltrados.map((lead) => (
+                  {leads.map((lead) => (
                     <tr key={lead.id} className="border-b border-slate-100">
+                      <td className="px-3 py-3 text-sm text-slate-700">{lead.nome}</td>
+                      <td className="px-3 py-3 text-sm text-slate-700">{lead.telefone ?? "-"}</td>
                       <td className="px-3 py-3 text-sm text-slate-700">
-                        {lead.nome}
+                        {lead.data_chegada ? new Date(lead.data_chegada).toLocaleString("pt-BR") : "-"}
                       </td>
-                      <td className="px-3 py-3 text-sm text-slate-700">
-                        {lead.telefone || "-"}
-                      </td>
-                      <td className="px-3 py-3 text-sm text-slate-700">
-                        {lead.empreendimento || "-"}
-                      </td>
-                      <td className="px-3 py-3 text-sm text-slate-700">
-                        {lead.origem || "-"}
-                      </td>
-                      <td className="px-3 py-3 text-sm text-slate-700">
-                        {lead.campanha || "-"}
-                      </td>
-                      <td className="px-3 py-3 text-sm text-slate-700">
-                        {lead.status_lead || "-"}
-                      </td>
-                      <td className="px-3 py-3 text-sm text-slate-700">
-                        {lead.etapa_funil || "-"}
-                      </td>
-                      <td className="px-3 py-3 text-sm text-slate-700">
-                        {lead.proxima_acao || "-"}
-                      </td>
+                      <td className="px-3 py-3 text-sm text-slate-700">{lead.campanha ?? lead.empreendimento ?? "-"}</td>
                       <td className="px-3 py-3 text-sm">
                         <button
-                          onClick={() => router.push(`/crm/${lead.id}`)}
-                          className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-700"
+                          onClick={() => setConcluirId(lead.id)}
+                          className="rounded-xl bg-amber-400 px-3 py-2 text-xs font-semibold text-slate-900 hover:bg-amber-300"
                         >
-                          Abrir lead
+                          Concluir (Entrei/Tentei)
                         </button>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-
-              {leadsFiltrados.length === 0 ? (
-                <div className="py-6 text-sm text-slate-500">
-                  Nenhum lead encontrado com os filtros atuais.
-                </div>
-              ) : null}
             </div>
           )}
         </section>
       </div>
+
+      {/* Modal */}
+      {concluirId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+            <h2 className="text-xl font-bold mb-4">Concluir contato</h2>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-slate-700">Resultado do contato</label>
+                <div className="mt-2 flex gap-4">
+                  <label className="inline-flex items-center gap-2">
+                    <input type="radio" name="resultado" checked={contatoSucesso} onChange={() => setContatoSucesso(true)} />
+                    <span>Entrei em contato</span>
+                  </label>
+                  <label className="inline-flex items-center gap-2">
+                    <input type="radio" name="resultado" checked={!contatoSucesso} onChange={() => setContatoSucesso(false)} />
+                    <span>Tentei entrar em contato</span>
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700">Observação (opcional)</label>
+                <textarea
+                  value={observacao}
+                  onChange={(e) => setObservacao(e.target.value)}
+                  className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
+                  rows={3}
+                />
+              </div>
+
+              <div>
+                <label className="inline-flex items-center gap-2">
+                  <input type="checkbox" checked={criarRetorno} onChange={(e) => setCriarRetorno(e.target.checked)} />
+                  <span className="text-sm">Criar tarefa de retorno</span>
+                </label>
+
+                {criarRetorno && (
+                  <div className="mt-2 flex items-center gap-3">
+                    <label className="text-sm text-slate-700">Dias para retorno:</label>
+                    <input
+                      type="number"
+                      min={1}
+                      className="w-20 rounded border px-2 py-1"
+                      value={diasRetorno}
+                      onChange={(e) => setDiasRetorno(Number(e.target.value))}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button onClick={() => setConcluirId(null)} className="px-4 py-2 rounded-lg border">
+                Cancelar
+              </button>
+              <button
+                onClick={handleConcluirConfirm}
+                className="px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800"
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

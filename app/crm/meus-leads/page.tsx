@@ -23,6 +23,7 @@ export default function MeusLeadsNovos() {
   const [contatoSucesso, setContatoSucesso] = useState<boolean>(true);
   const [criarRetorno, setCriarRetorno] = useState<boolean>(true);
   const [diasRetorno, setDiasRetorno] = useState<number>(2);
+const [dataRetorno, setDataRetorno] = useState<string>("");
   const [observacao, setObservacao] = useState<string>("");
 
   const usuario = (typeof window !== "undefined" && localStorage.getItem("portento_usuario")) || "sistema";
@@ -84,7 +85,8 @@ export default function MeusLeadsNovos() {
       setContatoSucesso(true);
       setCriarRetorno(true);
       setDiasRetorno(2);
-      setObservacao("");
+setDataRetorno("");
+setObservacao("");
       alert("Contato concluído com sucesso." + (json.tarefa ? " Tarefa criada." : ""));
     } catch (err) {
       console.error(err);
@@ -184,18 +186,32 @@ export default function MeusLeadsNovos() {
                   <span className="text-sm">Criar tarefa de retorno</span>
                 </label>
 
-                {criarRetorno && (
-                  <div className="mt-2 flex items-center gap-3">
-                    <label className="text-sm text-slate-700">Dias para retorno:</label>
-                    <input
-                      type="number"
-                      min={1}
-                      className="w-20 rounded border px-2 py-1"
-                      value={diasRetorno}
-                      onChange={(e) => setDiasRetorno(Number(e.target.value))}
-                    />
-                  </div>
-                )}
+               {criarRetorno && (
+  <div className="mt-2 flex items-center gap-3">
+    <label className="text-sm text-slate-700">Data do retorno:</label>
+    <input
+      type="date"
+      className="rounded border px-2 py-1"
+      value={dataRetorno}
+      min={new Date().toISOString().split("T")[0]}
+      onChange={(e) => {
+        const value = e.target.value;
+        setDataRetorno(value);
+
+        if (!value) return;
+
+        const hoje = new Date();
+        hoje.setHours(0, 0, 0, 0);
+
+        const escolhida = new Date(`${value}T00:00:00`);
+        const diffMs = escolhida.getTime() - hoje.getTime();
+        const diffDias = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+        setDiasRetorno(diffDias > 0 ? diffDias : 1);
+      }}
+    />
+  </div>
+)}
               </div>
             </div>
 
