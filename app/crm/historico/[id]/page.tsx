@@ -23,6 +23,45 @@ type HistoricoItem = {
   created_at: string | null;
 };
 
+function getEventoLabel(tipo?: string | null) {
+  switch (tipo) {
+    case "lead_criado":
+      return "Lead criado";
+    case "contato_inicial":
+      return "Contato inicial";
+    case "tarefa_concluida":
+      return "Tarefa concluída";
+    case "notificacao_visualizada":
+      return "Notificação visualizada";
+    default:
+      return tipo || "Evento";
+  }
+}
+
+function getEventoBadgeClasses(tipo?: string | null) {
+  switch (tipo) {
+    case "lead_criado":
+      return "bg-blue-100 text-blue-700";
+    case "contato_inicial":
+      return "bg-emerald-100 text-emerald-700";
+    case "tarefa_concluida":
+      return "bg-amber-100 text-amber-700";
+    case "notificacao_visualizada":
+      return "bg-violet-100 text-violet-700";
+    default:
+      return "bg-slate-100 text-slate-700";
+  }
+}
+
+function formatarData(data?: string | null) {
+  if (!data) return "-";
+
+  return new Date(data).toLocaleString("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  });
+}
+
 export default function HistoricoLeadPage() {
   const router = useRouter();
   const params = useParams();
@@ -137,41 +176,60 @@ export default function HistoricoLeadPage() {
           ) : historico.length === 0 ? (
             <p className="text-slate-600">Nenhum histórico encontrado para esse lead.</p>
           ) : (
-            <div className="space-y-4">
-              {historico.map((item) => (
-                <div
-                  key={item.id}
-                  className="rounded-2xl border border-slate-200 p-4"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-bold text-slate-900">
-                        {item.tipo_evento || "evento"}
-                      </p>
-                      <p className="mt-1 text-sm text-slate-600">
-                        {item.descricao || "-"}
-                      </p>
-                    </div>
+            <div className="space-y-5">
+             {historico.map((item) => (
+  <div
+    key={item.id}
+    className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+  >
+    <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+      <div className="flex-1">
+        <span
+          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getEventoBadgeClasses(
+            item.tipo_evento
+          )}`}
+        >
+          {getEventoLabel(item.tipo_evento)}
+        </span>
 
-                    <div className="text-right text-xs text-slate-500">
-                      <p>{item.created_at ? new Date(item.created_at).toLocaleString("pt-BR") : "-"}</p>
-                      <p>Usuário: {item.usuario || "-"}</p>
-                    </div>
-                  </div>
+        <p className="mt-3 text-sm leading-6 text-slate-700">
+          {item.descricao || "Sem descrição para este evento."}
+        </p>
 
-                  {item.tarefa_id ? (
-                    <p className="mt-3 text-xs text-slate-500">
-                      Tarefa relacionada: #{item.tarefa_id}
-                    </p>
-                  ) : null}
+        <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-500">
+          {item.tarefa_id ? (
+            <span className="rounded-lg bg-slate-100 px-2 py-1">
+              Tarefa #{item.tarefa_id}
+            </span>
+          ) : null}
 
-                  {item.meta ? (
-                    <pre className="mt-3 overflow-auto rounded-xl bg-slate-100 p-3 text-xs text-slate-700">
-                      {JSON.stringify(item.meta, null, 2)}
-                    </pre>
-                  ) : null}
-                </div>
-              ))}
+          {item.usuario ? (
+            <span className="rounded-lg bg-slate-100 px-2 py-1">
+              Usuário: {item.usuario}
+            </span>
+          ) : null}
+        </div>
+
+        {item.meta ? (
+          <details className="mt-4 rounded-xl bg-slate-50 p-3">
+            <summary className="cursor-pointer text-xs font-semibold text-slate-600">
+              Ver detalhes técnicos
+            </summary>
+
+            <pre className="mt-3 overflow-auto text-xs text-slate-700">
+              {JSON.stringify(item.meta, null, 2)}
+            </pre>
+          </details>
+        ) : null}
+      </div>
+
+      <div className="min-w-[140px] text-left text-xs text-slate-500 md:text-right">
+        <p className="font-medium text-slate-600">Data</p>
+        <p>{formatarData(item.created_at)}</p>
+      </div>
+    </div>
+  </div>
+))}
             </div>
           )}
         </section>

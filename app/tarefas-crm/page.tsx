@@ -108,27 +108,31 @@ export default function TarefasCrmPage() {
     let descricaoHistorico = `Tarefa "${tarefaAtual.tipo}" concluída.`;
 
     if (tarefaAtual.lead_id) {
-      let novoStatusLead = "Em andamento";
-      let novaEtapaFunil = "Primeiro Contato";
+    let novoStatusLead = "Em andamento";
+let novaEtapaFunil = "Primeiro Contato";
+let novaProximaAcao = "Fazer retorno";
 
-      if (tarefaAtual.tipo === "Confirmar visita") {
-        novoStatusLead = "Em andamento";
-        novaEtapaFunil = "Agendado";
-      }
+  if (tarefaAtual.tipo === "Confirmar visita") {
+  novoStatusLead = "Em andamento";
+  novaEtapaFunil = "Agendado";
+  novaProximaAcao = "Realizar visita";
+}
 
-      if (tarefaAtual.tipo === "Primeiro contato") {
-        novoStatusLead = "Em andamento";
-        novaEtapaFunil = "Primeiro Contato";
-      }
+if (tarefaAtual.tipo === "Primeiro contato") {
+  novoStatusLead = "Em andamento";
+  novaEtapaFunil = "Primeiro Contato";
+  novaProximaAcao = "Fazer retorno";
+}
 
-      const { error: leadError } = await supabase
-        .from("crm_leads")
-        .update({
-          status_lead: novoStatusLead,
-          etapa_funil: novaEtapaFunil,
-          ultima_atualizacao: new Date().toISOString(),
-        })
-        .eq("id", tarefaAtual.lead_id);
+    const { error: leadError } = await supabase
+  .from("crm_leads")
+  .update({
+    status_lead: novoStatusLead,
+    etapa_funil: novaEtapaFunil,
+    proxima_acao: novaProximaAcao,
+    ultima_atualizacao: new Date().toISOString(),
+  })
+  .eq("id", tarefaAtual.lead_id);
 
       if (leadError) {
         console.error(leadError);
@@ -138,7 +142,7 @@ export default function TarefasCrmPage() {
         return;
       }
 
-      descricaoHistorico += ` Lead atualizado para status "${novoStatusLead}" e etapa "${novaEtapaFunil}".`;
+      descricaoHistorico += ` Lead atualizado para status "${novoStatusLead}", etapa "${novaEtapaFunil}" e próxima ação "${novaProximaAcao}".`;
     }
 
     const { error: historicoError } = await supabase

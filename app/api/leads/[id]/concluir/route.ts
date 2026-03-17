@@ -8,6 +8,7 @@ type Body = {
   observacao?: string;
   criarRetorno?: boolean;
   diasRetorno?: number;
+  dataRetorno?: string;
 };
 
 function parseIdFromParamsOrUrl(params: any, req: Request): number | null {
@@ -56,9 +57,10 @@ export async function POST(req: Request, context?: any) {
     }
 
     const contatoSucesso = body.contatoSucesso ?? true;
-    const observacao = body.observacao ?? "";
-    const criarRetorno = body.criarRetorno ?? true;
-    const diasRetorno = body.diasRetorno ?? 2;
+const observacao = body.observacao ?? "";
+const criarRetorno = body.criarRetorno ?? true;
+const diasRetorno = body.diasRetorno ?? 2;
+const dataRetorno = body.dataRetorno ?? "";
 
     // identificar usuário (dev: x-usuario header; em produção use auth)
     const usuario =
@@ -129,8 +131,14 @@ export async function POST(req: Request, context?: any) {
 
         const gestor = (leadRow && leadRow.gestor) || usuario;
 
-        const prazo = new Date();
-        prazo.setDate(prazo.getDate() + diasRetorno);
+        let prazo: Date;
+
+if (dataRetorno) {
+  prazo = new Date(`${dataRetorno}T09:00:00`);
+} else {
+  prazo = new Date();
+  prazo.setDate(prazo.getDate() + diasRetorno);
+}
 
         const { data: tarefaData, error: tarefaErr } = await supabase
           .from("crm_tarefas")

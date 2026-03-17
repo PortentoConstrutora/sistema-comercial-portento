@@ -55,12 +55,13 @@ const [dataRetorno, setDataRetorno] = useState<string>("");
   async function handleConcluirConfirm() {
     if (!concluirId) return;
     try {
-      const payload = {
-        contatoSucesso,
-        observacao,
-        criarRetorno,
-        diasRetorno,
-      };
+  const payload = {
+  contatoSucesso,
+  observacao,
+  criarRetorno,
+  diasRetorno,
+  dataRetorno,
+};
 
       const res = await fetch(`/api/leads/${concluirId}/concluir`, {
         method: "POST",
