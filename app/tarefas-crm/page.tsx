@@ -40,6 +40,11 @@ const [modalCriarNovaTarefa, setModalCriarNovaTarefa] = useState(true);
 const [modalNovoTipoTarefa, setModalNovoTipoTarefa] = useState("Retorno");
 const [modalNovaDataTarefa, setModalNovaDataTarefa] = useState("");
 
+const [modalLancarNaAgenda, setModalLancarNaAgenda] = useState(false);
+const [modalDataAgenda, setModalDataAgenda] = useState("");
+const [modalHoraAgenda, setModalHoraAgenda] = useState("");
+const [modalLocalAgenda, setModalLocalAgenda] = useState("");
+
   useEffect(() => {
     const logado = localStorage.getItem("portento_logado");
     const nome = localStorage.getItem("portento_nome");
@@ -115,9 +120,14 @@ const [modalNovaDataTarefa, setModalNovaDataTarefa] = useState("");
   }
 
   setModalProximaAcaoCustom("");
-  setModalObservacao("");
-  setModalCriarNovaTarefa(true);
-  setModalNovaDataTarefa("");
+setModalObservacao("");
+setModalCriarNovaTarefa(true);
+setModalNovaDataTarefa("");
+
+setModalLancarNaAgenda(false);
+setModalDataAgenda("");
+setModalHoraAgenda("");
+setModalLocalAgenda("");
 }
 
 async function concluirTarefa() {
@@ -259,6 +269,61 @@ async function concluirTarefa() {
     }
   }
 
+if (modalLancarNaAgenda) {
+  let leadNome = `Lead ${tarefaAtual.lead_id}`;
+let leadTelefone = "";
+
+if (tarefaAtual.lead_id) {
+  const { data: leadData, error: leadBuscaError } = await supabase
+    .from("crm_leads")
+    .select("nome, telefone")
+    .eq("id", tarefaAtual.lead_id)
+    .single();
+
+  if (!leadBuscaError && leadData) {
+    leadNome = leadData.nome || `Lead ${tarefaAtual.lead_id}`;
+    leadTelefone = leadData.telefone || "";
+  }
+}
+  if (!modalDataAgenda) {
+    alert("Escolha a data para lançar na agenda.");
+    setSalvandoId(null);
+    return;
+  }
+
+ const tituloAgenda =
+  modalResultado === "Cliente quer visita"
+    ? `Visita - ${leadNome}`
+    : `${proximaAcaoFinal} - ${leadNome}`;
+
+const descricaoAgenda = `Lead: ${leadNome}${
+  leadTelefone ? ` • Telefone: ${leadTelefone}` : ""
+}. Tarefa de origem: "${tarefaAtual.tipo}". Resultado: "${modalResultado}". Próxima ação: "${proximaAcaoFinal}". ${
+  modalObservacao ? `Observação: ${modalObservacao}` : ""
+}`;
+
+  const { error: agendaError } = await supabase
+  .from("crm_agenda")
+  .insert({
+      criado_por: usuarioAtual,
+      responsavel: tarefaAtual.gestor || usuarioAtual,
+      titulo: tituloAgenda,
+      descricao: descricaoAgenda,
+      categoria: modalResultado === "Cliente quer visita" ? "visita" : "compromisso",
+      local: modalLocalAgenda.trim() || null,
+      data_compromisso: modalDataAgenda,
+      hora_compromisso: modalHoraAgenda || null,
+      prioridade: "normal",
+      status: "pendente",
+      observacoes: modalObservacao.trim() || null,
+    });
+
+  if (agendaError) {
+    console.error(agendaError);
+    alert("A tarefa foi concluída, mas deu erro ao lançar na agenda.");
+  }
+}
+
   await carregarTarefas();
 
   setModalTarefaId(null);
@@ -270,7 +335,10 @@ async function concluirTarefa() {
   setModalCriarNovaTarefa(true);
   setModalNovoTipoTarefa("Retorno");
   setModalNovaDataTarefa("");
-
+setModalLancarNaAgenda(false);
+setModalDataAgenda("");
+setModalHoraAgenda("");
+setModalLocalAgenda("");
   setSalvandoId(null);
 }
 
@@ -463,11 +531,12 @@ async function concluirTarefa() {
       setModalCriarNovaTarefa(true);
     }
 
-    if (resultado === "Cliente quer visita") {
-      setModalProximaAcao("Confirmar visita");
-      setModalNovoTipoTarefa("Confirmar visita");
-      setModalCriarNovaTarefa(true);
-    }
+   if (resultado === "Cliente quer visita") {
+  setModalProximaAcao("Confirmar visita");
+  setModalNovoTipoTarefa("Confirmar visita");
+  setModalCriarNovaTarefa(true);
+  setModalLancarNaAgenda(true);
+}
 
     if (resultado === "Cliente pediu proposta") {
       setModalProximaAcao("Enviar proposta");
@@ -475,11 +544,12 @@ async function concluirTarefa() {
       setModalCriarNovaTarefa(true);
     }
 
-    if (resultado === "Cliente sem interesse") {
-      setModalProximaAcao("Encerrar lead");
-      setModalNovoTipoTarefa("Retorno");
-      setModalCriarNovaTarefa(false);
-    }
+   if (resultado === "Cliente sem interesse") {
+  setModalProximaAcao("Encerrar lead");
+  setModalNovoTipoTarefa("Retorno");
+  setModalCriarNovaTarefa(false);
+  setModalLancarNaAgenda(false);
+}
   }}
   className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
 >
@@ -596,6 +666,61 @@ async function concluirTarefa() {
         </div>
       </div>
 
+<div className="rounded-xl border border-slate-200 p-4">
+  <label className="inline-flex items-center gap-2">
+    <input
+      type="checkbox"
+      checked={modalLancarNaAgenda}
+      onChange={(e) => setModalLancarNaAgenda(e.target.checked)}
+    />
+    <span className="text-sm font-medium text-slate-700">
+      Lançar na Minha Agenda também
+    </span>
+  </label>
+
+  {modalLancarNaAgenda && (
+    <div className="mt-4 grid gap-4 md:grid-cols-3">
+      <div>
+        <label className="block text-sm font-medium text-slate-700">
+          Data na agenda
+        </label>
+        <input
+          type="date"
+          value={modalDataAgenda}
+          min={new Date().toISOString().split("T")[0]}
+          onChange={(e) => setModalDataAgenda(e.target.value)}
+          className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-slate-700">
+          Hora
+        </label>
+        <input
+          type="time"
+          value={modalHoraAgenda}
+          onChange={(e) => setModalHoraAgenda(e.target.value)}
+          className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-slate-700">
+          Local
+        </label>
+        <input
+          type="text"
+          value={modalLocalAgenda}
+          onChange={(e) => setModalLocalAgenda(e.target.value)}
+          placeholder="Ex.: obra, stand, escritório"
+          className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
+        />
+      </div>
+    </div>
+  )}
+</div>
+
       <div className="mt-6 flex justify-end gap-3">
         <button
           onClick={() => {
@@ -608,6 +733,10 @@ async function concluirTarefa() {
             setModalCriarNovaTarefa(true);
             setModalNovoTipoTarefa("Retorno");
             setModalNovaDataTarefa("");
+            setModalLancarNaAgenda(false);
+setModalDataAgenda("");
+setModalHoraAgenda("");
+setModalLocalAgenda("");
           }}
           className="rounded-lg border px-4 py-2"
         >
