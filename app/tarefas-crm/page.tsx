@@ -52,6 +52,8 @@ export default function TarefasCrmPage() {
   const [modalImobiliariaDiario, setModalImobiliariaDiario] = useState("");
   const [modalCorretorDiario, setModalCorretorDiario] = useState("");
 
+  const [modalCriarFechamento, setModalCriarFechamento] = useState(false);
+const [modalStatusFechamento, setModalStatusFechamento] = useState("Em andamento");
   useEffect(() => {
     const logado = localStorage.getItem("portento_logado");
     const nome = localStorage.getItem("portento_nome");
@@ -142,6 +144,9 @@ export default function TarefasCrmPage() {
     setModalDataAgenda("");
     setModalHoraAgenda("");
     setModalLocalAgenda("");
+
+    setModalCriarFechamento(false);
+setModalStatusFechamento("Em andamento");
   }
 
   async function concluirTarefa() {
@@ -220,6 +225,139 @@ export default function TarefasCrmPage() {
         })
         .eq("id", tarefaAtual.lead_id);
 
+        if (modalCriarFechamento) {
+  let leadNome = `Lead ${tarefaAtual.lead_id}`;
+  let leadTelefone = "";
+  let leadProduto = "";
+  let leadGestor = tarefaAtual.gestor || usuarioAtual;
+
+  if (tarefaAtual.lead_id) {
+    const { data: leadData, error: leadBuscaError } = await supabase
+      .from("crm_leads")
+      .select("nome, telefone, empreendimento, gestor")
+      .eq("id", tarefaAtual.lead_id)
+      .single();
+
+    if (!leadBuscaError && leadData) {
+      leadNome = leadData.nome || `Lead ${tarefaAtual.lead_id}`;
+      leadTelefone = leadData.telefone || "";
+      leadProduto = leadData.empreendimento || "";
+      leadGestor = leadData.gestor || leadGestor;
+    }
+  }
+
+  const observacaoAutomatica = `Criado/atualizado automaticamente pela conclusão da tarefa "${tarefaAtual.tipo}". Resultado: "${modalResultado}". Próxima ação: "${proximaAcaoFinal}".`;
+
+  const statusAbertos = [
+    "Em andamento",
+    "Visita realizada",
+    "Proposta enviada",
+    "Em negociação",
+    "Aguardando cliente",
+  ];
+
+  let fechamentoExistente: { id: number } | null = null;
+
+  if (tarefaAtual.lead_id) {
+    const { data: fechamentoAberto, error: buscaFechamentoError } = await supabase
+      .from("crm_fechamentos")
+      .select("id")
+      .eq("lead_id", tarefaAtual.lead_id)
+      .in("status_fechamento", statusAbertos)
+      .order("id", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (buscaFechamentoError) {
+      console.error(buscaFechamentoError);
+    } else if (fechamentoAberto) {
+      fechamentoExistente = fechamentoAberto;
+    }
+  }
+
+  if (fechamentoExistente) {
+    const { error: fechamentoUpdateError } = await supabase
+      .from("crm_fechamentos")
+      .update({
+        gestor: leadGestor,
+        cliente: leadNome,
+        telefone: leadTelefone || null,
+        produto: leadProduto || null,
+        status_fechamento: modalStatusFechamento || "Em andamento",
+        descricao_status: modalObservacao.trim() || modalResultado,
+        data_status: new Date().toISOString().split("T")[0],
+        observacao: observacaoAutomatica,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", fechamentoExistente.id);
+
+    if (fechamentoUpdateError) {
+      console.error(fechamentoUpdateError);
+      alert("A tarefa foi concluída, mas deu erro ao atualizar o fechamento existente.");
+    } else if (tarefaAtual.lead_id) {
+      const { error: historicoFechamentoError } = await supabase
+        .from("crm_historico")
+        .insert({
+          lead_id: tarefaAtual.lead_id,
+          tarefa_id: tarefaAtual.id,
+          usuario: usuarioAtual,
+          tipo_evento: "fechamento_atualizado",
+          descricao: `Fechamento existente atualizado automaticamente pela conclusão da tarefa. Status: "${modalStatusFechamento}".`,
+          meta: {
+            origem: "automatica_tarefa",
+            status_fechamento: modalStatusFechamento,
+            resultado: modalResultado,
+            fechamento_id: fechamentoExistente.id,
+          },
+        });
+
+      if (historicoFechamentoError) {
+        console.error(historicoFechamentoError);
+        alert("O fechamento foi atualizado, mas deu erro ao gravar isso no histórico.");
+      }
+    }
+  } else {
+    const { error: fechamentoInsertError } = await supabase
+      .from("crm_fechamentos")
+      .insert({
+        lead_id: tarefaAtual.lead_id,
+        origem: "automatica_tarefa",
+        gestor: leadGestor,
+        cliente: leadNome,
+        telefone: leadTelefone || null,
+        produto: leadProduto || null,
+        status_fechamento: modalStatusFechamento || "Em andamento",
+        descricao_status: modalObservacao.trim() || modalResultado,
+        data_status: new Date().toISOString().split("T")[0],
+        observacao: observacaoAutomatica,
+      });
+
+    if (fechamentoInsertError) {
+      console.error(fechamentoInsertError);
+      alert("A tarefa foi concluída, mas deu erro ao criar o fechamento.");
+    } else if (tarefaAtual.lead_id) {
+      const { error: historicoFechamentoError } = await supabase
+        .from("crm_historico")
+        .insert({
+          lead_id: tarefaAtual.lead_id,
+          tarefa_id: tarefaAtual.id,
+          usuario: usuarioAtual,
+          tipo_evento: "fechamento_criado",
+          descricao: `Fechamento criado automaticamente pela conclusão da tarefa. Status inicial: "${modalStatusFechamento}".`,
+          meta: {
+            origem: "automatica_tarefa",
+            status_fechamento: modalStatusFechamento,
+            resultado: modalResultado,
+          },
+        });
+
+      if (historicoFechamentoError) {
+        console.error(historicoFechamentoError);
+        alert("O fechamento foi criado, mas deu erro ao gravar isso no histórico.");
+      }
+    }
+  }
+}
       if (leadError) {
         console.error(leadError);
         alert("A tarefa foi concluída, mas deu erro ao atualizar o lead.");
@@ -430,6 +568,8 @@ export default function TarefasCrmPage() {
     setModalHoraDiario("");
     setModalImobiliariaDiario("");
     setModalCorretorDiario("");
+    setModalCriarFechamento(false);
+setModalStatusFechamento("Em andamento");
     setSalvandoId(null);
   }
 
@@ -619,11 +759,13 @@ export default function TarefasCrmPage() {
                       setModalTipoAtividadeDiario("Visita Cliente");
                     }
 
-                    if (resultado === "Cliente pediu proposta") {
-                      setModalProximaAcao("Enviar proposta");
-                      setModalNovoTipoTarefa("Enviar proposta");
-                      setModalCriarNovaTarefa(true);
-                    }
+                   if (resultado === "Cliente pediu proposta") {
+  setModalProximaAcao("Enviar proposta");
+  setModalNovoTipoTarefa("Enviar proposta");
+  setModalCriarNovaTarefa(true);
+  setModalCriarFechamento(true);
+  setModalStatusFechamento("Proposta enviada");
+}
 
                     if (resultado === "Cliente sem interesse") {
                       setModalProximaAcao("Encerrar lead");
@@ -827,6 +969,41 @@ export default function TarefasCrmPage() {
               </div>
 
               <div className="rounded-xl border border-slate-200 p-4">
+  <label className="inline-flex items-center gap-2">
+    <input
+      type="checkbox"
+      checked={modalCriarFechamento}
+      onChange={(e) => setModalCriarFechamento(e.target.checked)}
+    />
+    <span className="text-sm font-medium text-slate-700">
+      Criar acompanhamento em Fechamentos também
+    </span>
+  </label>
+
+  {modalCriarFechamento && (
+    <div className="mt-4">
+      <label className="block text-sm font-medium text-slate-700">
+        Status inicial do fechamento
+      </label>
+      <select
+        value={modalStatusFechamento}
+        onChange={(e) => setModalStatusFechamento(e.target.value)}
+        className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+      >
+        <option value="Em andamento">Em andamento</option>
+        <option value="Visita realizada">Visita realizada</option>
+        <option value="Proposta enviada">Proposta enviada</option>
+        <option value="Em negociação">Em negociação</option>
+        <option value="Aguardando cliente">Aguardando cliente</option>
+        <option value="Fechado">Fechado</option>
+        <option value="Perdido">Perdido</option>
+        <option value="Cancelado">Cancelado</option>
+      </select>
+    </div>
+  )}
+</div>
+
+              <div className="rounded-xl border border-slate-200 p-4">
                 <label className="inline-flex items-center gap-2">
                   <input
                     type="checkbox"
@@ -904,6 +1081,8 @@ export default function TarefasCrmPage() {
                   setModalHoraDiario("");
                   setModalImobiliariaDiario("");
                   setModalCorretorDiario("");
+                  setModalCriarFechamento(false);
+setModalStatusFechamento("Em andamento");
                 }}
                 className="rounded-lg border px-4 py-2"
               >
