@@ -27,23 +27,30 @@ export default function TarefasCrmPage() {
   const [salvandoId, setSalvandoId] = useState<number | null>(null);
 
   const [modalTarefaId, setModalTarefaId] = useState<number | null>(null);
-const [modalTarefaTipo, setModalTarefaTipo] = useState<string>("");
+  const [modalTarefaTipo, setModalTarefaTipo] = useState<string>("");
 
-const [modalResultado, setModalResultado] = useState("Consegui falar com o cliente");
+  const [modalResultado, setModalResultado] = useState("Consegui falar com o cliente");
 
-const [modalProximaAcao, setModalProximaAcao] = useState("Fazer retorno");
-const [modalProximaAcaoCustom, setModalProximaAcaoCustom] = useState("");
+  const [modalProximaAcao, setModalProximaAcao] = useState("Fazer retorno");
+  const [modalProximaAcaoCustom, setModalProximaAcaoCustom] = useState("");
 
-const [modalObservacao, setModalObservacao] = useState("");
+  const [modalObservacao, setModalObservacao] = useState("");
 
-const [modalCriarNovaTarefa, setModalCriarNovaTarefa] = useState(true);
-const [modalNovoTipoTarefa, setModalNovoTipoTarefa] = useState("Retorno");
-const [modalNovaDataTarefa, setModalNovaDataTarefa] = useState("");
+  const [modalCriarNovaTarefa, setModalCriarNovaTarefa] = useState(true);
+  const [modalNovoTipoTarefa, setModalNovoTipoTarefa] = useState("Retorno");
+  const [modalNovaDataTarefa, setModalNovaDataTarefa] = useState("");
 
-const [modalLancarNaAgenda, setModalLancarNaAgenda] = useState(false);
-const [modalDataAgenda, setModalDataAgenda] = useState("");
-const [modalHoraAgenda, setModalHoraAgenda] = useState("");
-const [modalLocalAgenda, setModalLocalAgenda] = useState("");
+  const [modalLancarNaAgenda, setModalLancarNaAgenda] = useState(false);
+  const [modalDataAgenda, setModalDataAgenda] = useState("");
+  const [modalHoraAgenda, setModalHoraAgenda] = useState("");
+  const [modalLocalAgenda, setModalLocalAgenda] = useState("");
+
+  const [modalRegistrarNoDiario, setModalRegistrarNoDiario] = useState(false);
+  const [modalTipoAtividadeDiario, setModalTipoAtividadeDiario] = useState("Visita Cliente");
+  const [modalDataDiario, setModalDataDiario] = useState(new Date().toISOString().split("T")[0]);
+  const [modalHoraDiario, setModalHoraDiario] = useState("");
+  const [modalImobiliariaDiario, setModalImobiliariaDiario] = useState("");
+  const [modalCorretorDiario, setModalCorretorDiario] = useState("");
 
   useEffect(() => {
     const logado = localStorage.getItem("portento_logado");
@@ -97,250 +104,334 @@ const [modalLocalAgenda, setModalLocalAgenda] = useState("");
     return tarefa.status;
   }
 
- function abrirModalConclusao(tarefa: Tarefa) {
-  setModalTarefaId(tarefa.id);
-  setModalTarefaTipo(tarefa.tipo);
+  function abrirModalConclusao(tarefa: Tarefa) {
+    setModalTarefaId(tarefa.id);
+    setModalTarefaTipo(tarefa.tipo);
 
-  if (tarefa.tipo === "Primeiro contato") {
-    setModalResultado("Consegui falar com o cliente");
-    setModalProximaAcao("Fazer retorno");
-    setModalNovoTipoTarefa("Retorno");
-  } else if (tarefa.tipo === "Retorno") {
-    setModalResultado("Cliente pediu retorno");
-    setModalProximaAcao("Fazer retorno");
-    setModalNovoTipoTarefa("Retorno");
- } else if (tarefa.tipo === "Confirmar visita") {
-  setModalResultado("Cliente quer visita");
-  setModalProximaAcao("Confirmar visita");
-  setModalNovoTipoTarefa("Confirmar visita");
-} else {
-    setModalResultado("Consegui falar com o cliente");
-    setModalProximaAcao("Fazer retorno");
-    setModalNovoTipoTarefa("Retorno");
+    if (tarefa.tipo === "Primeiro contato") {
+      setModalResultado("Consegui falar com o cliente");
+      setModalProximaAcao("Fazer retorno");
+      setModalNovoTipoTarefa("Retorno");
+    } else if (tarefa.tipo === "Retorno") {
+      setModalResultado("Cliente pediu retorno");
+      setModalProximaAcao("Fazer retorno");
+      setModalNovoTipoTarefa("Retorno");
+    } else if (tarefa.tipo === "Confirmar visita") {
+      setModalResultado("Cliente quer visita");
+      setModalProximaAcao("Confirmar visita");
+      setModalNovoTipoTarefa("Confirmar visita");
+    } else {
+      setModalResultado("Consegui falar com o cliente");
+      setModalProximaAcao("Fazer retorno");
+      setModalNovoTipoTarefa("Retorno");
+    }
+
+    setModalProximaAcaoCustom("");
+    setModalObservacao("");
+    setModalCriarNovaTarefa(true);
+    setModalNovaDataTarefa("");
+
+    setModalRegistrarNoDiario(false);
+    setModalTipoAtividadeDiario("Visita Cliente");
+    setModalDataDiario(new Date().toISOString().split("T")[0]);
+    setModalHoraDiario("");
+    setModalImobiliariaDiario("");
+    setModalCorretorDiario("");
+
+    setModalLancarNaAgenda(false);
+    setModalDataAgenda("");
+    setModalHoraAgenda("");
+    setModalLocalAgenda("");
   }
 
-  setModalProximaAcaoCustom("");
-setModalObservacao("");
-setModalCriarNovaTarefa(true);
-setModalNovaDataTarefa("");
+  async function concluirTarefa() {
+    if (!modalTarefaId) return;
 
-setModalLancarNaAgenda(false);
-setModalDataAgenda("");
-setModalHoraAgenda("");
-setModalLocalAgenda("");
-}
+    setSalvandoId(modalTarefaId);
 
-async function concluirTarefa() {
-  if (!modalTarefaId) return;
+    const tarefaAtual = tarefas.find((t) => t.id === modalTarefaId);
+    const usuarioAtual = localStorage.getItem("portento_usuario") || "";
 
-  setSalvandoId(modalTarefaId);
-
-  const tarefaAtual = tarefas.find((t) => t.id === modalTarefaId);
-  const usuarioAtual = localStorage.getItem("portento_usuario") || "";
-
-  if (!tarefaAtual) {
-    alert("Tarefa não encontrada.");
-    setSalvandoId(null);
-    return;
-  }
-
-  const proximaAcaoFinal =
-    modalProximaAcao === "Outra"
-      ? modalProximaAcaoCustom.trim()
-      : modalProximaAcao;
-
-  if (!proximaAcaoFinal) {
-    alert("Preencha a próxima ação.");
-    setSalvandoId(null);
-    return;
-  }
-
-  let novaEtapaFunil = "Em atendimento";
-  let novoStatusLead = "Em andamento";
-
-  if (modalResultado === "Tentei e não consegui") {
-    novaEtapaFunil = "Primeiro Contato";
-  }
-
-  if (modalResultado === "Cliente pediu retorno") {
-    novaEtapaFunil = "Em atendimento";
-  }
-
-  if (modalResultado === "Cliente quer visita") {
-    novaEtapaFunil = "Agendado";
-  }
-
-  if (modalResultado === "Cliente pediu proposta") {
-    novaEtapaFunil = "Proposta";
-  }
-
-  if (modalResultado === "Cliente sem interesse") {
-    novaEtapaFunil = "Perdido";
-    novoStatusLead = "Perdido";
-  }
-
-  const { error: tarefaError } = await supabase
-    .from("crm_tarefas")
-    .update({
-      status: "Concluída",
-      observacao: modalObservacao || tarefaAtual.observacao,
-      atualizado_em: new Date().toISOString(),
-    })
-    .eq("id", modalTarefaId);
-
-  if (tarefaError) {
-    console.error(tarefaError);
-    alert("Erro ao concluir tarefa.");
-    setSalvandoId(null);
-    return;
-  }
-
-  if (tarefaAtual.lead_id) {
-    const { error: leadError } = await supabase
-      .from("crm_leads")
-      .update({
-        status_lead: novoStatusLead,
-        etapa_funil: novaEtapaFunil,
-        proxima_acao: proximaAcaoFinal,
-        ultima_atualizacao: new Date().toISOString(),
-      })
-      .eq("id", tarefaAtual.lead_id);
-
-    if (leadError) {
-      console.error(leadError);
-      alert("A tarefa foi concluída, mas deu erro ao atualizar o lead.");
-      await carregarTarefas();
+    if (!tarefaAtual) {
+      alert("Tarefa não encontrada.");
       setSalvandoId(null);
       return;
     }
 
-    const descricaoHistorico = `Tarefa "${tarefaAtual.tipo}" concluída com resultado "${modalResultado}". Lead atualizado para status "${novoStatusLead}", etapa "${novaEtapaFunil}" e próxima ação "${proximaAcaoFinal}". ${
-      modalObservacao ? `Observação: ${modalObservacao}` : ""
-    }`;
+    const proximaAcaoFinal =
+      modalProximaAcao === "Outra"
+        ? modalProximaAcaoCustom.trim()
+        : modalProximaAcao;
 
-    const { error: historicoError } = await supabase
-      .from("crm_historico")
-      .insert({
-        lead_id: tarefaAtual.lead_id,
-        tarefa_id: tarefaAtual.id,
-        usuario: usuarioAtual,
-        tipo_evento: "tarefa_concluida",
-        descricao: descricaoHistorico,
-        meta: {
-          resultado: modalResultado,
-          proximaAcao: proximaAcaoFinal,
-          criouNovaTarefa: modalCriarNovaTarefa,
-        },
-      });
-
-    if (historicoError) {
-      console.error(historicoError);
-      alert("A tarefa foi concluída e o lead atualizado, mas deu erro ao gravar histórico.");
+    if (!proximaAcaoFinal) {
+      alert("Preencha a próxima ação.");
+      setSalvandoId(null);
+      return;
     }
 
-    if (modalCriarNovaTarefa) {
-      if (!modalNovaDataTarefa) {
-        alert("Escolha a data da nova tarefa.");
+    let novaEtapaFunil = "Em atendimento";
+    let novoStatusLead = "Em andamento";
+
+    if (modalResultado === "Tentei e não consegui") {
+      novaEtapaFunil = "Primeiro Contato";
+    }
+
+    if (modalResultado === "Cliente pediu retorno") {
+      novaEtapaFunil = "Em atendimento";
+    }
+
+    if (modalResultado === "Cliente quer visita") {
+      novaEtapaFunil = "Agendado";
+    }
+
+    if (modalResultado === "Cliente pediu proposta") {
+      novaEtapaFunil = "Proposta";
+    }
+
+    if (modalResultado === "Cliente sem interesse") {
+      novaEtapaFunil = "Perdido";
+      novoStatusLead = "Perdido";
+    }
+
+    const { error: tarefaError } = await supabase
+      .from("crm_tarefas")
+      .update({
+        status: "Concluída",
+        observacao: modalObservacao || tarefaAtual.observacao,
+        atualizado_em: new Date().toISOString(),
+      })
+      .eq("id", modalTarefaId);
+
+    if (tarefaError) {
+      console.error(tarefaError);
+      alert("Erro ao concluir tarefa.");
+      setSalvandoId(null);
+      return;
+    }
+
+    if (tarefaAtual.lead_id) {
+      const { error: leadError } = await supabase
+        .from("crm_leads")
+        .update({
+          status_lead: novoStatusLead,
+          etapa_funil: novaEtapaFunil,
+          proxima_acao: proximaAcaoFinal,
+          ultima_atualizacao: new Date().toISOString(),
+        })
+        .eq("id", tarefaAtual.lead_id);
+
+      if (leadError) {
+        console.error(leadError);
+        alert("A tarefa foi concluída, mas deu erro ao atualizar o lead.");
+        await carregarTarefas();
         setSalvandoId(null);
         return;
       }
 
-      const prazoNovaTarefa = new Date(`${modalNovaDataTarefa}T09:00:00`).toISOString();
+      const descricaoHistorico = `Tarefa "${tarefaAtual.tipo}" concluída com resultado "${modalResultado}". Lead atualizado para status "${novoStatusLead}", etapa "${novaEtapaFunil}" e próxima ação "${proximaAcaoFinal}". ${
+        modalObservacao ? `Observação: ${modalObservacao}` : ""
+      }`;
 
-      const { error: novaTarefaError } = await supabase
-        .from("crm_tarefas")
+      const { error: historicoError } = await supabase
+        .from("crm_historico")
         .insert({
           lead_id: tarefaAtual.lead_id,
-          tipo: modalNovoTipoTarefa,
-          status: "Pendente",
-          prazo: prazoNovaTarefa,
-          observacao: `Nova tarefa criada após conclusão de "${tarefaAtual.tipo}". ${
-            modalObservacao ? modalObservacao : ""
-          }`,
-          gestor: tarefaAtual.gestor || usuarioAtual,
-          criado_em: new Date().toISOString(),
-          atualizado_em: new Date().toISOString(),
+          tarefa_id: tarefaAtual.id,
+          usuario: usuarioAtual,
+          tipo_evento: "tarefa_concluida",
+          descricao: descricaoHistorico,
+          meta: {
+            resultado: modalResultado,
+            proximaAcao: proximaAcaoFinal,
+            criouNovaTarefa: modalCriarNovaTarefa,
+          },
         });
 
-      if (novaTarefaError) {
-        console.error(novaTarefaError);
-        alert("A tarefa foi concluída, mas deu erro ao criar a nova tarefa.");
+      if (historicoError) {
+        console.error(historicoError);
+        alert("A tarefa foi concluída e o lead atualizado, mas deu erro ao gravar histórico.");
+      }
+
+      if (modalCriarNovaTarefa) {
+        if (!modalNovaDataTarefa) {
+          alert("Escolha a data da nova tarefa.");
+          setSalvandoId(null);
+          return;
+        }
+
+        const prazoNovaTarefa = new Date(`${modalNovaDataTarefa}T09:00:00`).toISOString();
+
+        const { error: novaTarefaError } = await supabase
+          .from("crm_tarefas")
+          .insert({
+            lead_id: tarefaAtual.lead_id,
+            tipo: modalNovoTipoTarefa,
+            status: "Pendente",
+            prazo: prazoNovaTarefa,
+            observacao: `Nova tarefa criada após conclusão de "${tarefaAtual.tipo}". ${
+              modalObservacao ? modalObservacao : ""
+            }`,
+            gestor: tarefaAtual.gestor || usuarioAtual,
+            criado_em: new Date().toISOString(),
+            atualizado_em: new Date().toISOString(),
+          });
+
+        if (novaTarefaError) {
+          console.error(novaTarefaError);
+          alert("A tarefa foi concluída, mas deu erro ao criar a nova tarefa.");
+        }
       }
     }
-  }
 
-if (modalLancarNaAgenda) {
-  let leadNome = `Lead ${tarefaAtual.lead_id}`;
-let leadTelefone = "";
+    if (modalLancarNaAgenda) {
+      let leadNome = `Lead ${tarefaAtual.lead_id}`;
+      let leadTelefone = "";
 
-if (tarefaAtual.lead_id) {
-  const { data: leadData, error: leadBuscaError } = await supabase
-    .from("crm_leads")
-    .select("nome, telefone")
-    .eq("id", tarefaAtual.lead_id)
-    .single();
+      if (tarefaAtual.lead_id) {
+        const { data: leadData, error: leadBuscaError } = await supabase
+          .from("crm_leads")
+          .select("nome, telefone")
+          .eq("id", tarefaAtual.lead_id)
+          .single();
 
-  if (!leadBuscaError && leadData) {
-    leadNome = leadData.nome || `Lead ${tarefaAtual.lead_id}`;
-    leadTelefone = leadData.telefone || "";
-  }
-}
-  if (!modalDataAgenda) {
-    alert("Escolha a data para lançar na agenda.");
+        if (!leadBuscaError && leadData) {
+          leadNome = leadData.nome || `Lead ${tarefaAtual.lead_id}`;
+          leadTelefone = leadData.telefone || "";
+        }
+      }
+
+      if (!modalDataAgenda) {
+        alert("Escolha a data para lançar na agenda.");
+        setSalvandoId(null);
+        return;
+      }
+
+      const tituloAgenda =
+        modalResultado === "Cliente quer visita"
+          ? `Visita - ${leadNome}`
+          : `${proximaAcaoFinal} - ${leadNome}`;
+
+      const descricaoAgenda = `Lead: ${leadNome}${
+        leadTelefone ? ` • Telefone: ${leadTelefone}` : ""
+      }. Tarefa de origem: "${tarefaAtual.tipo}". Resultado: "${modalResultado}". Próxima ação: "${proximaAcaoFinal}". ${
+        modalObservacao ? `Observação: ${modalObservacao}` : ""
+      }`;
+
+      const { error: agendaError } = await supabase
+        .from("crm_agenda")
+        .insert({
+          criado_por: usuarioAtual,
+          responsavel: tarefaAtual.gestor || usuarioAtual,
+          titulo: tituloAgenda,
+          descricao: descricaoAgenda,
+          categoria: modalResultado === "Cliente quer visita" ? "visita" : "compromisso",
+          local: modalLocalAgenda.trim() || null,
+          data_compromisso: modalDataAgenda,
+          hora_compromisso: modalHoraAgenda || null,
+          prioridade: "normal",
+          status: "pendente",
+          observacoes: modalObservacao.trim() || null,
+        });
+
+      if (agendaError) {
+        console.error(agendaError);
+        alert("A tarefa foi concluída, mas deu erro ao lançar na agenda.");
+      }
+    }
+
+    if (modalRegistrarNoDiario) {
+      let leadNome = `Lead ${tarefaAtual.lead_id}`;
+      let leadTelefone = "";
+      let leadProduto = "";
+      let leadImobiliaria = "";
+      let leadCorretor = "";
+      let leadGestor = tarefaAtual.gestor || usuarioAtual;
+
+      if (tarefaAtual.lead_id) {
+        const { data: leadData, error: leadBuscaError } = await supabase
+          .from("crm_leads")
+          .select("nome, telefone, empreendimento, gestor")
+          .eq("id", tarefaAtual.lead_id)
+          .single();
+
+        if (!leadBuscaError && leadData) {
+          leadNome = leadData.nome || `Lead ${tarefaAtual.lead_id}`;
+          leadTelefone = leadData.telefone || "";
+          leadProduto = leadData.empreendimento || "";
+          leadGestor = leadData.gestor || leadGestor;
+        }
+      }
+
+      const { error: diarioError } = await supabase
+        .from("crm_diario_bordo")
+        .insert({
+          lead_id: tarefaAtual.lead_id,
+          tarefa_id: tarefaAtual.id,
+          agenda_id: null,
+          origem: "tarefa",
+          data_registro: modalDataDiario,
+          hora_registro: modalHoraDiario || null,
+          gestor: leadGestor,
+          cliente: leadNome,
+          telefone: leadTelefone || null,
+          produto: leadProduto || null,
+          imobiliaria: modalImobiliariaDiario.trim() || leadImobiliaria || null,
+          corretor: modalCorretorDiario.trim() || leadCorretor || null,
+          tipo_atividade: modalTipoAtividadeDiario,
+          resultado: modalResultado,
+          observacao: modalObservacao || null,
+        });
+
+      if (diarioError) {
+        console.error(diarioError);
+        alert("A tarefa foi concluída, mas deu erro ao registrar no Diário de Bordo.");
+      } else if (tarefaAtual.lead_id) {
+        const { error: historicoDiarioError } = await supabase
+          .from("crm_historico")
+          .insert({
+            lead_id: tarefaAtual.lead_id,
+            tarefa_id: tarefaAtual.id,
+            usuario: usuarioAtual,
+            tipo_evento: "diario_registrado",
+            descricao: `Registro lançado no Diário de Bordo. Tipo: "${modalTipoAtividadeDiario}". Resultado: "${modalResultado}".`,
+            meta: {
+              origem: "tarefa",
+              data_registro: modalDataDiario,
+              hora_registro: modalHoraDiario || null,
+              tipo_atividade: modalTipoAtividadeDiario,
+            },
+          });
+
+        if (historicoDiarioError) {
+          console.error(historicoDiarioError);
+          alert("O Diário foi registrado, mas deu erro ao gravar isso no histórico.");
+        }
+      }
+    }
+
+    await carregarTarefas();
+
+    setModalTarefaId(null);
+    setModalTarefaTipo("");
+    setModalResultado("Consegui falar com o cliente");
+    setModalProximaAcao("Fazer retorno");
+    setModalProximaAcaoCustom("");
+    setModalObservacao("");
+    setModalCriarNovaTarefa(true);
+    setModalNovoTipoTarefa("Retorno");
+    setModalNovaDataTarefa("");
+    setModalLancarNaAgenda(false);
+    setModalDataAgenda("");
+    setModalHoraAgenda("");
+    setModalLocalAgenda("");
+    setModalRegistrarNoDiario(false);
+    setModalTipoAtividadeDiario("Visita Cliente");
+    setModalDataDiario(new Date().toISOString().split("T")[0]);
+    setModalHoraDiario("");
+    setModalImobiliariaDiario("");
+    setModalCorretorDiario("");
     setSalvandoId(null);
-    return;
   }
-
- const tituloAgenda =
-  modalResultado === "Cliente quer visita"
-    ? `Visita - ${leadNome}`
-    : `${proximaAcaoFinal} - ${leadNome}`;
-
-const descricaoAgenda = `Lead: ${leadNome}${
-  leadTelefone ? ` • Telefone: ${leadTelefone}` : ""
-}. Tarefa de origem: "${tarefaAtual.tipo}". Resultado: "${modalResultado}". Próxima ação: "${proximaAcaoFinal}". ${
-  modalObservacao ? `Observação: ${modalObservacao}` : ""
-}`;
-
-  const { error: agendaError } = await supabase
-  .from("crm_agenda")
-  .insert({
-      criado_por: usuarioAtual,
-      responsavel: tarefaAtual.gestor || usuarioAtual,
-      titulo: tituloAgenda,
-      descricao: descricaoAgenda,
-      categoria: modalResultado === "Cliente quer visita" ? "visita" : "compromisso",
-      local: modalLocalAgenda.trim() || null,
-      data_compromisso: modalDataAgenda,
-      hora_compromisso: modalHoraAgenda || null,
-      prioridade: "normal",
-      status: "pendente",
-      observacoes: modalObservacao.trim() || null,
-    });
-
-  if (agendaError) {
-    console.error(agendaError);
-    alert("A tarefa foi concluída, mas deu erro ao lançar na agenda.");
-  }
-}
-
-  await carregarTarefas();
-
-  setModalTarefaId(null);
-  setModalTarefaTipo("");
-  setModalResultado("Consegui falar com o cliente");
-  setModalProximaAcao("Fazer retorno");
-  setModalProximaAcaoCustom("");
-  setModalObservacao("");
-  setModalCriarNovaTarefa(true);
-  setModalNovoTipoTarefa("Retorno");
-  setModalNovaDataTarefa("");
-setModalLancarNaAgenda(false);
-setModalDataAgenda("");
-setModalHoraAgenda("");
-setModalLocalAgenda("");
-  setSalvandoId(null);
-}
 
   const tarefasFiltradas = useMemo(() => {
     return tarefas.filter((tarefa) => {
@@ -351,10 +442,7 @@ setModalLocalAgenda("");
         statusVisual.toLowerCase() === filtroStatus.toLowerCase();
 
       if (perfil === "gestor") {
-        return (
-          matchStatus &&
-          (tarefa.gestor || "").toLowerCase() === usuarioLogado
-        );
+        return matchStatus && (tarefa.gestor || "").toLowerCase() === usuarioLogado;
       }
 
       return matchStatus;
@@ -362,15 +450,9 @@ setModalLocalAgenda("");
   }, [tarefas, filtroStatus, perfil, usuarioLogado]);
 
   const total = tarefasFiltradas.length;
-  const pendentes = tarefasFiltradas.filter(
-    (t) => getStatusVisual(t) === "Pendente"
-  ).length;
-  const atrasadas = tarefasFiltradas.filter(
-    (t) => getStatusVisual(t) === "Atrasada"
-  ).length;
-  const concluidas = tarefasFiltradas.filter(
-    (t) => getStatusVisual(t) === "Concluída"
-  ).length;
+  const pendentes = tarefasFiltradas.filter((t) => getStatusVisual(t) === "Pendente").length;
+  const atrasadas = tarefasFiltradas.filter((t) => getStatusVisual(t) === "Atrasada").length;
+  const concluidas = tarefasFiltradas.filter((t) => getStatusVisual(t) === "Concluída").length;
 
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-8 md:px-8">
@@ -380,9 +462,7 @@ setModalLocalAgenda("");
             CRM
           </p>
 
-          <h1 className="mt-3 text-3xl font-bold md:text-5xl">
-            Tarefas CRM
-          </h1>
+          <h1 className="mt-3 text-3xl font-bold md:text-5xl">Tarefas CRM</h1>
 
           <p className="mt-4 text-sm text-slate-200 md:text-base">
             Pendências, retornos, prazos e próximas ações ligadas aos leads do CRM.
@@ -461,17 +541,13 @@ setModalLocalAgenda("");
                         <td className="px-3 py-3 text-sm text-slate-700">{tarefa.lead_id ?? "-"}</td>
                         <td className="px-3 py-3 text-sm text-slate-700">{statusVisual}</td>
                         <td className="px-3 py-3 text-sm text-slate-700">
-                          {tarefa.prazo
-                            ? new Date(tarefa.prazo).toLocaleString("pt-BR")
-                            : "-"}
+                          {tarefa.prazo ? new Date(tarefa.prazo).toLocaleString("pt-BR") : "-"}
                         </td>
                         <td className="px-3 py-3 text-sm text-slate-700">{tarefa.observacao || "-"}</td>
                         <td className="px-3 py-3 text-sm text-slate-700">{tarefa.gestor || "-"}</td>
                         <td className="px-3 py-3 text-sm">
                           {concluida ? (
-                            <span className="text-xs font-semibold text-green-700">
-                              Concluída
-                            </span>
+                            <span className="text-xs font-semibold text-green-700">Concluída</span>
                           ) : (
                             <button
                               onClick={() => abrirModalConclusao(tarefa)}
@@ -491,268 +567,359 @@ setModalLocalAgenda("");
         </section>
       </div>
 
-    {modalTarefaId && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-    <div className="w-full max-w-xl rounded-2xl bg-white p-6 shadow-xl">
-      <h2 className="mb-2 text-xl font-bold text-slate-900">
-        Concluir tarefa
-      </h2>
+      {modalTarefaId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-xl rounded-2xl bg-white p-6 shadow-xl">
+            <h2 className="mb-2 text-xl font-bold text-slate-900">Concluir tarefa</h2>
 
-      <p className="text-sm text-slate-600">
-        Tarefa selecionada: <strong>{modalTarefaTipo}</strong>
-      </p>
+            <p className="text-sm text-slate-600">
+              Tarefa selecionada: <strong>{modalTarefaTipo}</strong>
+            </p>
 
-      <div className="mt-4 space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-slate-700">
-            Resultado da tarefa
-          </label>
-       <select
-  value={modalResultado}
-  onChange={(e) => {
-    const resultado = e.target.value;
-    setModalResultado(resultado);
-
-    if (resultado === "Consegui falar com o cliente") {
-      setModalProximaAcao("Fazer retorno");
-      setModalNovoTipoTarefa("Retorno");
-      setModalCriarNovaTarefa(true);
-    }
-
-    if (resultado === "Tentei e não consegui") {
-      setModalProximaAcao("Nova tentativa de contato");
-      setModalNovoTipoTarefa("Nova tentativa");
-      setModalCriarNovaTarefa(true);
-    }
-
-    if (resultado === "Cliente pediu retorno") {
-      setModalProximaAcao("Fazer retorno");
-      setModalNovoTipoTarefa("Retorno");
-      setModalCriarNovaTarefa(true);
-    }
-
-   if (resultado === "Cliente quer visita") {
-  setModalProximaAcao("Confirmar visita");
-  setModalNovoTipoTarefa("Confirmar visita");
-  setModalCriarNovaTarefa(true);
-  setModalLancarNaAgenda(true);
-}
-
-    if (resultado === "Cliente pediu proposta") {
-      setModalProximaAcao("Enviar proposta");
-      setModalNovoTipoTarefa("Enviar proposta");
-      setModalCriarNovaTarefa(true);
-    }
-
-   if (resultado === "Cliente sem interesse") {
-  setModalProximaAcao("Encerrar lead");
-  setModalNovoTipoTarefa("Retorno");
-  setModalCriarNovaTarefa(false);
-  setModalLancarNaAgenda(false);
-}
-  }}
-  className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
->
-            <option value="Consegui falar com o cliente">
-              Consegui falar com o cliente
-            </option>
-            <option value="Tentei e não consegui">
-              Tentei e não consegui
-            </option>
-            <option value="Cliente pediu retorno">
-              Cliente pediu retorno
-            </option>
-            <option value="Cliente quer visita">
-              Cliente quer visita
-            </option>
-            <option value="Cliente pediu proposta">
-              Cliente pediu proposta
-            </option>
-            <option value="Cliente sem interesse">
-              Cliente sem interesse
-            </option>
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-slate-700">
-            Observação
-          </label>
-          <textarea
-            value={modalObservacao}
-            onChange={(e) => setModalObservacao(e.target.value)}
-            rows={4}
-            className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
-            placeholder="Digite uma observação sobre o andamento"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-slate-700">
-            Próxima ação
-          </label>
-          <select
-            value={modalProximaAcao}
-            onChange={(e) => setModalProximaAcao(e.target.value)}
-            className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
-          >
-            <option value="Fazer retorno">Fazer retorno</option>
-            <option value="Nova tentativa de contato">Nova tentativa de contato</option>
-            <option value="Agendar visita">Agendar visita</option>
-            <option value="Confirmar visita">Confirmar visita</option>
-            <option value="Enviar proposta">Enviar proposta</option>
-            <option value="Aguardar cliente">Aguardar cliente</option>
-          <option value="Realizar visita">Realizar visita</option>
-<option value="Encerrar lead">Encerrar lead</option>
-<option value="Outra">Outra</option>
-          </select>
-
-          {modalProximaAcao === "Outra" && (
-            <input
-              type="text"
-              value={modalProximaAcaoCustom}
-              onChange={(e) => setModalProximaAcaoCustom(e.target.value)}
-              placeholder="Digite a próxima ação"
-              className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
-            />
-          )}
-        </div>
-
-        <div className="rounded-xl border border-slate-200 p-4">
-          <label className="inline-flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={modalCriarNovaTarefa}
-              onChange={(e) => setModalCriarNovaTarefa(e.target.checked)}
-            />
-            <span className="text-sm font-medium text-slate-700">
-              Criar nova tarefa para a próxima ação
-            </span>
-          </label>
-
-          {modalCriarNovaTarefa && (
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <div className="mt-4 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700">
-                  Tipo da próxima tarefa
+                  Resultado da tarefa
                 </label>
                 <select
-                  value={modalNovoTipoTarefa}
-                  onChange={(e) => setModalNovoTipoTarefa(e.target.value)}
+                  value={modalResultado}
+                  onChange={(e) => {
+                    const resultado = e.target.value;
+                    setModalResultado(resultado);
+
+                    if (resultado === "Consegui falar com o cliente") {
+                      setModalProximaAcao("Fazer retorno");
+                      setModalNovoTipoTarefa("Retorno");
+                      setModalCriarNovaTarefa(true);
+                      setModalRegistrarNoDiario(true);
+                      setModalTipoAtividadeDiario("Atendimento ao Cliente");
+                    }
+
+                    if (resultado === "Tentei e não consegui") {
+                      setModalProximaAcao("Nova tentativa de contato");
+                      setModalNovoTipoTarefa("Nova tentativa");
+                      setModalCriarNovaTarefa(true);
+                      setModalRegistrarNoDiario(false);
+                    }
+
+                    if (resultado === "Cliente pediu retorno") {
+                      setModalProximaAcao("Fazer retorno");
+                      setModalNovoTipoTarefa("Retorno");
+                      setModalCriarNovaTarefa(true);
+                      setModalRegistrarNoDiario(true);
+                      setModalTipoAtividadeDiario("Atendimento ao Cliente");
+                    }
+
+                    if (resultado === "Cliente quer visita") {
+                      setModalProximaAcao("Confirmar visita");
+                      setModalNovoTipoTarefa("Confirmar visita");
+                      setModalCriarNovaTarefa(true);
+                      setModalLancarNaAgenda(true);
+                      setModalRegistrarNoDiario(true);
+                      setModalTipoAtividadeDiario("Visita Cliente");
+                    }
+
+                    if (resultado === "Cliente pediu proposta") {
+                      setModalProximaAcao("Enviar proposta");
+                      setModalNovoTipoTarefa("Enviar proposta");
+                      setModalCriarNovaTarefa(true);
+                    }
+
+                    if (resultado === "Cliente sem interesse") {
+                      setModalProximaAcao("Encerrar lead");
+                      setModalNovoTipoTarefa("Retorno");
+                      setModalCriarNovaTarefa(false);
+                      setModalLancarNaAgenda(false);
+                      setModalRegistrarNoDiario(false);
+                    }
+                  }}
                   className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
                 >
-                  <option value="Retorno">Retorno</option>
-                  <option value="Nova tentativa">Nova tentativa</option>
-                  <option value="Confirmar visita">Confirmar visita</option>
-                  <option value="Visita">Visita</option>
-                  <option value="Enviar proposta">Enviar proposta</option>
+                  <option value="Consegui falar com o cliente">
+                    Consegui falar com o cliente
+                  </option>
+                  <option value="Tentei e não consegui">Tentei e não consegui</option>
+                  <option value="Cliente pediu retorno">Cliente pediu retorno</option>
+                  <option value="Cliente quer visita">Cliente quer visita</option>
+                  <option value="Cliente pediu proposta">Cliente pediu proposta</option>
+                  <option value="Cliente sem interesse">Cliente sem interesse</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-700">
-                  Data da próxima tarefa
+                  Observação
                 </label>
-                <input
-                  type="date"
-                  value={modalNovaDataTarefa}
-                  min={new Date().toISOString().split("T")[0]}
-                  onChange={(e) => setModalNovaDataTarefa(e.target.value)}
+                <textarea
+                  value={modalObservacao}
+                  onChange={(e) => setModalObservacao(e.target.value)}
+                  rows={4}
                   className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
+                  placeholder="Digite uma observação sobre o andamento"
                 />
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700">
+                  Próxima ação
+                </label>
+                <select
+                  value={modalProximaAcao}
+                  onChange={(e) => setModalProximaAcao(e.target.value)}
+                  className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
+                >
+                  <option value="Fazer retorno">Fazer retorno</option>
+                  <option value="Nova tentativa de contato">Nova tentativa de contato</option>
+                  <option value="Agendar visita">Agendar visita</option>
+                  <option value="Confirmar visita">Confirmar visita</option>
+                  <option value="Enviar proposta">Enviar proposta</option>
+                  <option value="Aguardar cliente">Aguardar cliente</option>
+                  <option value="Realizar visita">Realizar visita</option>
+                  <option value="Encerrar lead">Encerrar lead</option>
+                  <option value="Outra">Outra</option>
+                </select>
+
+                {modalProximaAcao === "Outra" && (
+                  <input
+                    type="text"
+                    value={modalProximaAcaoCustom}
+                    onChange={(e) => setModalProximaAcaoCustom(e.target.value)}
+                    placeholder="Digite a próxima ação"
+                    className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
+                  />
+                )}
+              </div>
+
+              <div className="rounded-xl border border-slate-200 p-4">
+                <label className="inline-flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={modalCriarNovaTarefa}
+                    onChange={(e) => setModalCriarNovaTarefa(e.target.checked)}
+                  />
+                  <span className="text-sm font-medium text-slate-700">
+                    Criar nova tarefa para a próxima ação
+                  </span>
+                </label>
+
+                {modalCriarNovaTarefa && (
+                  <div className="mt-4 grid gap-4 md:grid-cols-2">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">
+                        Tipo da próxima tarefa
+                      </label>
+                      <select
+                        value={modalNovoTipoTarefa}
+                        onChange={(e) => setModalNovoTipoTarefa(e.target.value)}
+                        className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
+                      >
+                        <option value="Retorno">Retorno</option>
+                        <option value="Nova tentativa">Nova tentativa</option>
+                        <option value="Confirmar visita">Confirmar visita</option>
+                        <option value="Visita">Visita</option>
+                        <option value="Enviar proposta">Enviar proposta</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">
+                        Data da próxima tarefa
+                      </label>
+                      <input
+                        type="date"
+                        value={modalNovaDataTarefa}
+                        min={new Date().toISOString().split("T")[0]}
+                        onChange={(e) => setModalNovaDataTarefa(e.target.value)}
+                        className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="rounded-xl border border-slate-200 p-4">
+                <label className="inline-flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={modalRegistrarNoDiario}
+                    onChange={(e) => setModalRegistrarNoDiario(e.target.checked)}
+                  />
+                  <span className="text-sm font-medium text-slate-700">
+                    Registrar no Diário de Bordo também
+                  </span>
+                </label>
+
+                {modalRegistrarNoDiario && (
+                  <div className="mt-4 grid gap-4 md:grid-cols-2">
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-slate-700">
+                        Tipo da atividade
+                      </label>
+                      <select
+                        value={modalTipoAtividadeDiario}
+                        onChange={(e) => setModalTipoAtividadeDiario(e.target.value)}
+                        className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                      >
+                        <option value="Visita Cliente">Visita Cliente</option>
+                        <option value="Visita Imobiliária">Visita Imobiliária</option>
+                        <option value="Atendimento ao Cliente">Atendimento ao Cliente</option>
+                        <option value="Ligações Leads">Ligações Leads</option>
+                        <option value="Flow Up Corretores">Flow Up Corretores</option>
+                        <option value="Reunião">Reunião</option>
+                        <option value="Feirão">Feirão</option>
+                        <option value="Ação de Rua">Ação de Rua</option>
+                        <option value="Aprovação">Aprovação</option>
+                        <option value="Outro">Outro</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">
+                        Data do registro
+                      </label>
+                      <input
+                        type="date"
+                        value={modalDataDiario}
+                        onChange={(e) => setModalDataDiario(e.target.value)}
+                        className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">
+                        Hora
+                      </label>
+                      <input
+                        type="time"
+                        value={modalHoraDiario}
+                        onChange={(e) => setModalHoraDiario(e.target.value)}
+                        className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">
+                        Imobiliária
+                      </label>
+                      <input
+                        type="text"
+                        value={modalImobiliariaDiario}
+                        onChange={(e) => setModalImobiliariaDiario(e.target.value)}
+                        placeholder="Digite a imobiliária"
+                        className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">
+                        Corretor
+                      </label>
+                      <input
+                        type="text"
+                        value={modalCorretorDiario}
+                        onChange={(e) => setModalCorretorDiario(e.target.value)}
+                        placeholder="Digite o corretor"
+                        className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="rounded-xl border border-slate-200 p-4">
+                <label className="inline-flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={modalLancarNaAgenda}
+                    onChange={(e) => setModalLancarNaAgenda(e.target.checked)}
+                  />
+                  <span className="text-sm font-medium text-slate-700">
+                    Lançar na Minha Agenda também
+                  </span>
+                </label>
+
+                {modalLancarNaAgenda && (
+                  <div className="mt-4 grid gap-4 md:grid-cols-3">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">
+                        Data na agenda
+                      </label>
+                      <input
+                        type="date"
+                        value={modalDataAgenda}
+                        min={new Date().toISOString().split("T")[0]}
+                        onChange={(e) => setModalDataAgenda(e.target.value)}
+                        className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">
+                        Hora
+                      </label>
+                      <input
+                        type="time"
+                        value={modalHoraAgenda}
+                        onChange={(e) => setModalHoraAgenda(e.target.value)}
+                        className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">
+                        Local
+                      </label>
+                      <input
+                        type="text"
+                        value={modalLocalAgenda}
+                        onChange={(e) => setModalLocalAgenda(e.target.value)}
+                        placeholder="Ex.: obra, stand, escritório"
+                        className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-          )}
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setModalTarefaId(null);
+                  setModalTarefaTipo("");
+                  setModalResultado("Consegui falar com o cliente");
+                  setModalProximaAcao("Fazer retorno");
+                  setModalProximaAcaoCustom("");
+                  setModalObservacao("");
+                  setModalCriarNovaTarefa(true);
+                  setModalNovoTipoTarefa("Retorno");
+                  setModalNovaDataTarefa("");
+                  setModalLancarNaAgenda(false);
+                  setModalDataAgenda("");
+                  setModalHoraAgenda("");
+                  setModalLocalAgenda("");
+                  setModalRegistrarNoDiario(false);
+                  setModalTipoAtividadeDiario("Visita Cliente");
+                  setModalDataDiario(new Date().toISOString().split("T")[0]);
+                  setModalHoraDiario("");
+                  setModalImobiliariaDiario("");
+                  setModalCorretorDiario("");
+                }}
+                className="rounded-lg border px-4 py-2"
+              >
+                Cancelar
+              </button>
+
+              <button
+                onClick={concluirTarefa}
+                className="rounded-lg bg-slate-900 px-4 py-2 text-white hover:bg-slate-800"
+              >
+                {salvandoId === modalTarefaId ? "Salvando..." : "Continuar"}
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
-
-<div className="rounded-xl border border-slate-200 p-4">
-  <label className="inline-flex items-center gap-2">
-    <input
-      type="checkbox"
-      checked={modalLancarNaAgenda}
-      onChange={(e) => setModalLancarNaAgenda(e.target.checked)}
-    />
-    <span className="text-sm font-medium text-slate-700">
-      Lançar na Minha Agenda também
-    </span>
-  </label>
-
-  {modalLancarNaAgenda && (
-    <div className="mt-4 grid gap-4 md:grid-cols-3">
-      <div>
-        <label className="block text-sm font-medium text-slate-700">
-          Data na agenda
-        </label>
-        <input
-          type="date"
-          value={modalDataAgenda}
-          min={new Date().toISOString().split("T")[0]}
-          onChange={(e) => setModalDataAgenda(e.target.value)}
-          className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-slate-700">
-          Hora
-        </label>
-        <input
-          type="time"
-          value={modalHoraAgenda}
-          onChange={(e) => setModalHoraAgenda(e.target.value)}
-          className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-slate-700">
-          Local
-        </label>
-        <input
-          type="text"
-          value={modalLocalAgenda}
-          onChange={(e) => setModalLocalAgenda(e.target.value)}
-          placeholder="Ex.: obra, stand, escritório"
-          className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
-        />
-      </div>
-    </div>
-  )}
-</div>
-
-      <div className="mt-6 flex justify-end gap-3">
-        <button
-          onClick={() => {
-            setModalTarefaId(null);
-            setModalTarefaTipo("");
-            setModalResultado("Consegui falar com o cliente");
-            setModalProximaAcao("Fazer retorno");
-            setModalProximaAcaoCustom("");
-            setModalObservacao("");
-            setModalCriarNovaTarefa(true);
-            setModalNovoTipoTarefa("Retorno");
-            setModalNovaDataTarefa("");
-            setModalLancarNaAgenda(false);
-setModalDataAgenda("");
-setModalHoraAgenda("");
-setModalLocalAgenda("");
-          }}
-          className="rounded-lg border px-4 py-2"
-        >
-          Cancelar
-        </button>
-
-        <button
-  onClick={concluirTarefa}
-  className="rounded-lg bg-slate-900 px-4 py-2 text-white hover:bg-slate-800"
->
-  {salvandoId === modalTarefaId ? "Salvando..." : "Continuar"}
-</button>
-      </div>
-    </div>
-  </div>
-)}
+      )}
     </main>
   );
 }
