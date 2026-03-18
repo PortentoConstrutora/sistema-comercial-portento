@@ -805,20 +805,34 @@ export default function TarefasCrmPage() {
   return (
     <main className="min-h-screen bg-slate-100 px-3 py-4 sm:px-4 sm:py-6 lg:px-6 xl:px-8 2xl:px-10">
       <div className="mx-auto w-full max-w-[1600px]">
-        <section className="mb-6 rounded-3xl bg-slate-900 px-5 py-5 text-white shadow-xl sm:px-6 sm:py-6 lg:px-8 lg:py-7">
-          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-amber-300">
-            CRM
-          </p>
+        <section className="mb-6 overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
+          <div className="h-1 bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500" />
+          <div className="px-5 py-5 sm:px-6 sm:py-6 lg:px-8">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.35em] text-amber-600">
+                  CRM • operação diária
+                </p>
 
-          <h1 className="mt-2 text-2xl font-bold sm:text-3xl lg:text-4xl xl:text-[2.6rem]">Tarefas CRM</h1>
+                <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl lg:text-[2.5rem]">
+                  Tarefas CRM
+                </h1>
 
-          <p className="mt-3 max-w-3xl text-sm text-slate-200 sm:text-base">
-            Pendências, retornos, prazos e próximas ações ligadas aos leads do CRM.
-          </p>
+                <p className="mt-3 max-w-3xl text-sm text-slate-600 sm:text-base">
+                  Pendências, retornos, prazos e próximas ações ligadas aos leads do CRM.
+                </p>
+              </div>
 
-          <p className="mt-3 text-sm text-slate-300">
-            Usuário logado: <strong>{nomeUsuario || "Carregando..."}</strong>
-          </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700">
+                  Prioridade para tarefas em aberto
+                </span>
+                <span className="inline-flex items-center rounded-full bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700">
+                  Área do CRM
+                </span>
+              </div>
+            </div>
+          </div>
         </section>
 
         <section className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
