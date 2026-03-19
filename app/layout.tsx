@@ -68,8 +68,9 @@ export default function RootLayout({
     const base: LinkItem[] = [
       { label: "Início", href: "/" },
       { label: "CRM", href: "/crm" },
-      { label: "Meus Leads", href: "/crm/meus-leads" },
+      { label: "Novos Leads", href: "/crm/meus-leads" },
       { label: "Tarefas CRM", href: "/tarefas-crm" },
+      { label: "Meus Leads", href: "/crm/todos-leads" },
       { label: "Minha Agenda", href: "/minha-agenda" },
       { label: "Diário", href: "/diario" },
       { label: "Fechamentos", href: "/fechamentos" },
