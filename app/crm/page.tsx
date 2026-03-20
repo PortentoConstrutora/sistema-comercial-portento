@@ -2,8 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 type Lead = {
   id: number;
@@ -28,9 +27,6 @@ function formatarData(data?: string) {
 }
 
 export default function MeusLeadsNovosPage() {
-  const searchParams = useSearchParams();
-  const leadIdDaUrl = searchParams.get("lead");
-
   const [usuario, setUsuario] = useState("sistema");
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,25 +49,6 @@ export default function MeusLeadsNovosPage() {
   useEffect(() => {
     void fetchLeads();
   }, []);
-
-  useEffect(() => {
-    if (!leadIdDaUrl || leads.length === 0) return;
-
-    const idNumerico = Number(leadIdDaUrl);
-    if (!Number.isFinite(idNumerico)) return;
-
-    const leadEncontrado = leads.find((lead) => lead.id === idNumerico);
-    if (leadEncontrado) {
-      setConcluirId(idNumerico);
-    }
-  }, [leadIdDaUrl, leads]);
-
-  const leadDestaqueId = useMemo(() => {
-    if (!leadIdDaUrl) return null;
-
-    const idNumerico = Number(leadIdDaUrl);
-    return Number.isFinite(idNumerico) ? idNumerico : null;
-  }, [leadIdDaUrl]);
 
   async function fetchLeads() {
     setLoading(true);
@@ -157,9 +134,7 @@ export default function MeusLeadsNovosPage() {
           <p className="text-xs font-semibold uppercase tracking-[0.35em] text-amber-300">
             CRM
           </p>
-          <h1 className="mt-3 text-3xl font-bold md:text-5xl">
-            Leads novos
-          </h1>
+          <h1 className="mt-3 text-3xl font-bold md:text-5xl">Leads novos</h1>
           <p className="mt-4 text-sm text-slate-200 md:text-base">
             Esta é a página principal de primeiro contato. Todo novo lead deve
             entrar por aqui antes de seguir para tarefas e acompanhamento.
@@ -249,40 +224,34 @@ export default function MeusLeadsNovosPage() {
                 </thead>
 
                 <tbody>
-                  {leads.map((lead) => {
-                    const isDestaque = lead.id === leadDestaqueId;
-
-                    return (
-                      <tr
-                        key={lead.id}
-                        className={`border-b border-slate-100 ${
-                          isDestaque ? "bg-amber-50" : "bg-white"
-                        }`}
-                      >
-                        <td className="px-3 py-3 text-sm font-medium text-slate-800">
-                          {lead.nome}
-                        </td>
-                        <td className="px-3 py-3 text-sm text-slate-700">
-                          {lead.telefone ?? "-"}
-                        </td>
-                        <td className="px-3 py-3 text-sm text-slate-700">
-                          {formatarData(lead.data_chegada)}
-                        </td>
-                        <td className="px-3 py-3 text-sm text-slate-700">
-                          {lead.campanha ?? lead.empreendimento ?? "-"}
-                        </td>
-                        <td className="px-3 py-3 text-sm">
-                          <button
-                            onClick={() => setConcluirId(lead.id)}
-                            className="rounded-xl bg-amber-400 px-3 py-2 text-xs font-semibold text-slate-900 transition hover:bg-amber-300"
-                            type="button"
-                          >
-                            Concluir contato
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                  {leads.map((lead) => (
+                    <tr
+                      key={lead.id}
+                      className="border-b border-slate-100 bg-white"
+                    >
+                      <td className="px-3 py-3 text-sm font-medium text-slate-800">
+                        {lead.nome}
+                      </td>
+                      <td className="px-3 py-3 text-sm text-slate-700">
+                        {lead.telefone ?? "-"}
+                      </td>
+                      <td className="px-3 py-3 text-sm text-slate-700">
+                        {formatarData(lead.data_chegada)}
+                      </td>
+                      <td className="px-3 py-3 text-sm text-slate-700">
+                        {lead.campanha ?? lead.empreendimento ?? "-"}
+                      </td>
+                      <td className="px-3 py-3 text-sm">
+                        <button
+                          onClick={() => setConcluirId(lead.id)}
+                          className="rounded-xl bg-amber-400 px-3 py-2 text-xs font-semibold text-slate-900 transition hover:bg-amber-300"
+                          type="button"
+                        >
+                          Concluir contato
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
