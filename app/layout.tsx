@@ -1,3 +1,4 @@
+// app/layout.tsx
 "use client";
 
 import Link from "next/link";
@@ -60,7 +61,9 @@ export default function RootLayout({
   }
 
   const nomeExibicao = nome || usuario || "Usuário";
-  const perfilExibicao = perfil ? perfil.charAt(0).toUpperCase() + perfil.slice(1) : "Gestor";
+  const perfilExibicao = perfil
+    ? perfil.charAt(0).toUpperCase() + perfil.slice(1)
+    : "Gestor";
   const paginaLogin = pathname === "/login";
   const mostrarHeader = carregado && logado && !paginaLogin;
 
@@ -68,7 +71,6 @@ export default function RootLayout({
     const base: LinkItem[] = [
       { label: "Início", href: "/" },
       { label: "CRM", href: "/crm" },
-      { label: "Novos Leads", href: "/crm/meus-leads" },
       { label: "Tarefas CRM", href: "/tarefas-crm" },
       { label: "Meus Leads", href: "/crm/todos-leads" },
       { label: "Minha Agenda", href: "/minha-agenda" },
@@ -123,7 +125,8 @@ export default function RootLayout({
                         const ativo =
                           link.href === "/"
                             ? pathname === "/"
-                            : pathname === link.href || pathname.startsWith(`${link.href}/`);
+                            : pathname === link.href ||
+                              pathname.startsWith(`${link.href}/`);
 
                         return (
                           <Link
@@ -181,7 +184,8 @@ export default function RootLayout({
                       const ativo =
                         link.href === "/"
                           ? pathname === "/"
-                          : pathname === link.href || pathname.startsWith(`${link.href}/`);
+                          : pathname === link.href ||
+                            pathname.startsWith(`${link.href}/`);
 
                       return (
                         <Link

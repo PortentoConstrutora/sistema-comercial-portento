@@ -1,7 +1,8 @@
+// app/tarefas-crm/page.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "../lib/supabase";
 
 type Tarefa = {
@@ -46,6 +47,9 @@ function sugerirDataPorResultado(resultado: string) {
 
 export default function TarefasCrmPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const tarefaIdDaUrl = searchParams.get("tarefa");
+
   const [nomeUsuario, setNomeUsuario] = useState("");
   const [perfil, setPerfil] = useState("");
   const [usuarioLogado, setUsuarioLogado] = useState("");
@@ -82,6 +86,13 @@ export default function TarefasCrmPage() {
     () => tarefas.find((tarefa) => tarefa.id === modalTarefaId) || null,
     [tarefas, modalTarefaId],
   );
+
+  const tarefaDestaqueId = useMemo(() => {
+    if (!tarefaIdDaUrl) return null;
+
+    const idNumerico = Number(tarefaIdDaUrl);
+    return Number.isFinite(idNumerico) ? idNumerico : null;
+  }, [tarefaIdDaUrl]);
 
   useEffect(() => {
     const logado = localStorage.getItem("portento_logado");
@@ -163,8 +174,24 @@ export default function TarefasCrmPage() {
   }
 
   useEffect(() => {
-    carregarTarefas();
+    void carregarTarefas();
   }, []);
+
+  useEffect(() => {
+    if (!tarefaDestaqueId || tarefas.length === 0) return;
+
+    const tarefaEncontrada = tarefas.find((tarefa) => tarefa.id === tarefaDestaqueId);
+    if (!tarefaEncontrada) return;
+
+    abrirModalConclusao(tarefaEncontrada);
+
+    const timer = window.setTimeout(() => {
+      const elemento = document.getElementById(`tarefa-row-${tarefaDestaqueId}`);
+      elemento?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 150);
+
+    return () => window.clearTimeout(timer);
+  }, [tarefaDestaqueId, tarefas]);
 
   function getStatusVisual(tarefa: Tarefa) {
     if (tarefa.status === "Concluída") return "Concluída";
@@ -954,15 +981,23 @@ export default function TarefasCrmPage() {
                     const statusVisual = getStatusVisual(tarefa);
                     const concluida = statusVisual === "Concluída";
                     const atrasada = statusVisual === "Atrasada";
+                    const emDestaque = tarefa.id === tarefaDestaqueId;
 
                     return (
                       <tr
+                        id={`tarefa-row-${tarefa.id}`}
                         key={tarefa.id}
-                        className={`border-b border-slate-100 ${atrasada ? "bg-red-50/60" : "bg-white"}`}
+                        className={`border-b border-slate-100 ${
+                          emDestaque
+                            ? "bg-amber-50 ring-2 ring-amber-200"
+                            : atrasada
+                            ? "bg-red-50/60"
+                            : "bg-white"
+                        }`}
                       >
                         <td className="px-3 py-3 text-sm text-slate-700">
                           <div className="font-medium text-slate-800">{formatarPrazo(tarefa.prazo)}</div>
-                          <div className="text-xs text-slate-500">Lead #{tarefa.lead_id ?? "-"}</div>
+                          <div className="text-xs text-slate-500">Lead {tarefa.lead_id ?? "-"}</div>
                         </td>
                         <td className="px-3 py-3 text-sm text-slate-700">
                           <span
@@ -991,9 +1026,13 @@ export default function TarefasCrmPage() {
                           ) : (
                             <button
                               onClick={() => abrirModalConclusao(tarefa)}
-                              className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-700"
+                              className={`rounded-xl px-3 py-2 text-xs font-semibold text-white ${
+                                emDestaque
+                                  ? "bg-amber-500 hover:bg-amber-400"
+                                  : "bg-slate-900 hover:bg-slate-700"
+                              }`}
                             >
-                              Concluir
+                              {emDestaque ? "Abrir tarefa" : "Concluir"}
                             </button>
                           )}
                         </td>
@@ -1010,356 +1049,360 @@ export default function TarefasCrmPage() {
       {modalTarefaId && (
         <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/60 p-2 sm:items-center sm:p-4">
           <div className="w-full max-w-[98vw] overflow-hidden rounded-3xl bg-white shadow-2xl sm:max-w-3xl xl:max-w-5xl">
-            <div className="max-h-[92vh] overflow-y-auto p-4 sm:p-5 lg:p-6"><h2 className="mb-2 text-xl font-bold text-slate-900 sm:text-2xl">Concluir tarefa</h2>
+            <div className="max-h-[92vh] overflow-y-auto p-4 sm:p-5 lg:p-6">
+              <h2 className="mb-2 text-xl font-bold text-slate-900 sm:text-2xl">Concluir tarefa</h2>
 
-            <p className="text-sm text-slate-600">
-              Tarefa selecionada: <strong>{modalTarefaTipo}</strong>
-            </p>
+              <p className="text-sm text-slate-600">
+                Tarefa selecionada: <strong>{modalTarefaTipo}</strong>
+              </p>
 
-            {tarefaSelecionada && (
-              <div className="mt-4 grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-2 xl:grid-cols-4">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Cliente</p>
-                  <p className="mt-1 text-sm font-semibold text-slate-900">
-                    {tarefaSelecionada.cliente_nome || `Lead ${tarefaSelecionada.lead_id ?? "-"}`}
-                  </p>
+              {tarefaSelecionada && (
+                <div className="mt-4 grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-2 xl:grid-cols-4">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Cliente</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-900">
+                      {tarefaSelecionada.cliente_nome || `Lead ${tarefaSelecionada.lead_id ?? "-"}`}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Telefone</p>
+                    <p className="mt-1 text-sm text-slate-800">{tarefaSelecionada.cliente_telefone || "-"}</p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Produto</p>
+                    <p className="mt-1 text-sm text-slate-800">{tarefaSelecionada.cliente_produto || "-"}</p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Prazo atual</p>
+                    <p className="mt-1 text-sm text-slate-800">{formatarPrazo(tarefaSelecionada.prazo)}</p>
+                  </div>
                 </div>
+              )}
 
+              <div className="mt-4 space-y-4">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Telefone</p>
-                  <p className="mt-1 text-sm text-slate-800">{tarefaSelecionada.cliente_telefone || "-"}</p>
-                </div>
-
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Produto</p>
-                  <p className="mt-1 text-sm text-slate-800">{tarefaSelecionada.cliente_produto || "-"}</p>
-                </div>
-
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Prazo atual</p>
-                  <p className="mt-1 text-sm text-slate-800">{formatarPrazo(tarefaSelecionada.prazo)}</p>
-                </div>
-              </div>
-            )}
-
-            <div className="mt-4 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700">
-                  Resultado da tarefa
-                </label>
-                <select
-                  value={modalResultado}
-                  onChange={(e) => aplicarConfiguracaoPorResultado(e.target.value)}
-                  className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
-                >
-                  <option value="Consegui falar com o cliente">
-                    Consegui falar com o cliente
-                  </option>
-                  <option value="Tentei e não consegui">Tentei e não consegui</option>
-                  <option value="Cliente pediu retorno">Cliente pediu retorno</option>
-                  <option value="Cliente quer visita">Cliente quer visita</option>
-                  <option value="Cliente pediu proposta">Cliente pediu proposta</option>
-                  <option value="Cliente sem interesse">Cliente sem interesse</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700">Observação</label>
-                <textarea
-                  value={modalObservacao}
-                  onChange={(e) => setModalObservacao(e.target.value)}
-                  rows={4}
-                  className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
-                  placeholder="Digite uma observação sobre o andamento"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700">Próxima ação</label>
-                <select
-                  value={modalProximaAcao}
-                  onChange={(e) => setModalProximaAcao(e.target.value)}
-                  className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
-                >
-                  <option value="Fazer retorno">Fazer retorno</option>
-                  <option value="Nova tentativa de contato">Nova tentativa de contato</option>
-                  <option value="Agendar visita">Agendar visita</option>
-                  <option value="Confirmar visita">Confirmar visita</option>
-                  <option value="Enviar proposta">Enviar proposta</option>
-                  <option value="Aguardar cliente">Aguardar cliente</option>
-                  <option value="Realizar visita">Realizar visita</option>
-                  <option value="Encerrar lead">Encerrar lead</option>
-                  <option value="Outra">Outra</option>
-                </select>
-
-                {modalProximaAcao === "Outra" && (
-                  <input
-                    type="text"
-                    value={modalProximaAcaoCustom}
-                    onChange={(e) => setModalProximaAcaoCustom(e.target.value)}
-                    placeholder="Digite a próxima ação"
+                  <label className="block text-sm font-medium text-slate-700">
+                    Resultado da tarefa
+                  </label>
+                  <select
+                    value={modalResultado}
+                    onChange={(e) => aplicarConfiguracaoPorResultado(e.target.value)}
                     className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
+                  >
+                    <option value="Consegui falar com o cliente">
+                      Consegui falar com o cliente
+                    </option>
+                    <option value="Tentei e não consegui">Tentei e não consegui</option>
+                    <option value="Cliente pediu retorno">Cliente pediu retorno</option>
+                    <option value="Cliente quer visita">Cliente quer visita</option>
+                    <option value="Cliente pediu proposta">Cliente pediu proposta</option>
+                    <option value="Cliente sem interesse">Cliente sem interesse</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Observação</label>
+                  <textarea
+                    value={modalObservacao}
+                    onChange={(e) => setModalObservacao(e.target.value)}
+                    rows={4}
+                    className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
+                    placeholder="Digite uma observação sobre o andamento"
                   />
-                )}
-              </div>
+                </div>
 
-              <div className="rounded-xl border border-slate-200 p-4">
-                <label className="inline-flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={modalCriarNovaTarefa}
-                    onChange={(e) => setModalCriarNovaTarefa(e.target.checked)}
-                  />
-                  <span className="text-sm font-medium text-slate-700">
-                    Criar nova tarefa também
-                  </span>
-                </label>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Próxima ação</label>
+                  <select
+                    value={modalProximaAcao}
+                    onChange={(e) => setModalProximaAcao(e.target.value)}
+                    className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
+                  >
+                    <option value="Fazer retorno">Fazer retorno</option>
+                    <option value="Nova tentativa de contato">Nova tentativa de contato</option>
+                    <option value="Agendar visita">Agendar visita</option>
+                    <option value="Confirmar visita">Confirmar visita</option>
+                    <option value="Enviar proposta">Enviar proposta</option>
+                    <option value="Aguardar cliente">Aguardar cliente</option>
+                    <option value="Realizar visita">Realizar visita</option>
+                    <option value="Encerrar lead">Encerrar lead</option>
+                    <option value="Outra">Outra</option>
+                  </select>
 
-                {modalCriarNovaTarefa && (
-                  <div className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                    O sistema já sugere uma data para a próxima tarefa. Você pode alterar se quiser.
-                  </div>
-                )}
+                  {modalProximaAcao === "Outra" && (
+                    <input
+                      type="text"
+                      value={modalProximaAcaoCustom}
+                      onChange={(e) => setModalProximaAcaoCustom(e.target.value)}
+                      placeholder="Digite a próxima ação"
+                      className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
+                    />
+                  )}
+                </div>
 
-                {modalCriarNovaTarefa && (
-                  <div className="mt-4 grid gap-4 lg:grid-cols-2">
-                    <div>
+                <div className="rounded-xl border border-slate-200 p-4">
+                  <label className="inline-flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={modalCriarNovaTarefa}
+                      onChange={(e) => setModalCriarNovaTarefa(e.target.checked)}
+                    />
+                    <span className="text-sm font-medium text-slate-700">
+                      Criar nova tarefa também
+                    </span>
+                  </label>
+
+                  {modalCriarNovaTarefa && (
+                    <div className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                      O sistema já sugere uma data para a próxima tarefa. Você pode alterar se quiser.
+                    </div>
+                  )}
+
+                  {modalCriarNovaTarefa && (
+                    <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700">
+                          Tipo da nova tarefa
+                        </label>
+                        <select
+                          value={modalNovoTipoTarefa}
+                          onChange={(e) => setModalNovoTipoTarefa(e.target.value)}
+                          className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
+                        >
+                          <option value="Retorno">Retorno</option>
+                          <option value="Nova tentativa">Nova tentativa</option>
+                          <option value="Confirmar visita">Confirmar visita</option>
+                          <option value="Enviar proposta">Enviar proposta</option>
+                          <option value="Realizar visita">Realizar visita</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700">
+                          Data da nova tarefa
+                        </label>
+                        <input
+                          type="date"
+                          value={modalNovaDataTarefa}
+                          min={DATA_HOJE()}
+                          onChange={(e) => setModalNovaDataTarefa(e.target.value)}
+                          className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="rounded-xl border border-slate-200 p-4">
+                  <label className="inline-flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={modalRegistrarNoDiario}
+                      onChange={(e) => setModalRegistrarNoDiario(e.target.checked)}
+                    />
+                    <span className="text-sm font-medium text-slate-700">
+                      Registrar no Diário de Bordo também
+                    </span>
+                  </label>
+
+                  {modalRegistrarNoDiario && (
+                    <div className="mt-3 rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                      Use o Diário para registrar atendimento, visita, reunião e contexto importante da ação.
+                    </div>
+                  )}
+
+                  {modalRegistrarNoDiario && (
+                    <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-slate-700">
+                          Tipo da atividade
+                        </label>
+                        <select
+                          value={modalTipoAtividadeDiario}
+                          onChange={(e) => setModalTipoAtividadeDiario(e.target.value)}
+                          className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        >
+                          <option value="Visita Cliente">Visita Cliente</option>
+                          <option value="Visita Imobiliária">Visita Imobiliária</option>
+                          <option value="Atendimento ao Cliente">Atendimento ao Cliente</option>
+                          <option value="Ligações Leads">Ligações Leads</option>
+                          <option value="Flow Up Corretores">Flow Up Corretores</option>
+                          <option value="Reunião">Reunião</option>
+                          <option value="Feirão">Feirão</option>
+                          <option value="Ação de Rua">Ação de Rua</option>
+                          <option value="Aprovação">Aprovação</option>
+                          <option value="Outro">Outro</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700">
+                          Data do registro
+                        </label>
+                        <input
+                          type="date"
+                          value={modalDataDiario}
+                          onChange={(e) => setModalDataDiario(e.target.value)}
+                          className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700">Hora</label>
+                        <input
+                          type="time"
+                          value={modalHoraDiario}
+                          onChange={(e) => setModalHoraDiario(e.target.value)}
+                          className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700">
+                          Imobiliária
+                        </label>
+                        <input
+                          type="text"
+                          value={modalImobiliariaDiario}
+                          onChange={(e) => setModalImobiliariaDiario(e.target.value)}
+                          placeholder="Digite a imobiliária"
+                          className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700">Corretor</label>
+                        <input
+                          type="text"
+                          value={modalCorretorDiario}
+                          onChange={(e) => setModalCorretorDiario(e.target.value)}
+                          placeholder="Digite o corretor"
+                          className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="rounded-xl border border-slate-200 p-4">
+                  <label className="inline-flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={modalCriarFechamento}
+                      onChange={(e) => setModalCriarFechamento(e.target.checked)}
+                    />
+                    <span className="text-sm font-medium text-slate-700">
+                      Criar acompanhamento em Fechamentos também
+                    </span>
+                  </label>
+
+                  {modalCriarFechamento && (
+                    <div className="mt-3 rounded-xl bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
+                      Ative isso quando a tarefa já virou acompanhamento comercial em Fechamentos.
+                    </div>
+                  )}
+
+                  {modalCriarFechamento && (
+                    <div className="mt-4">
                       <label className="block text-sm font-medium text-slate-700">
-                        Tipo da nova tarefa
+                        Status inicial do fechamento
                       </label>
                       <select
-                        value={modalNovoTipoTarefa}
-                        onChange={(e) => setModalNovoTipoTarefa(e.target.value)}
-                        className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
-                      >
-                        <option value="Retorno">Retorno</option>
-                        <option value="Nova tentativa">Nova tentativa</option>
-                        <option value="Confirmar visita">Confirmar visita</option>
-                        <option value="Enviar proposta">Enviar proposta</option>
-                        <option value="Realizar visita">Realizar visita</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700">
-                        Data da nova tarefa
-                      </label>
-                      <input
-                        type="date"
-                        value={modalNovaDataTarefa}
-                        min={DATA_HOJE()}
-                        onChange={(e) => setModalNovaDataTarefa(e.target.value)}
-                        className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="rounded-xl border border-slate-200 p-4">
-                <label className="inline-flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={modalRegistrarNoDiario}
-                    onChange={(e) => setModalRegistrarNoDiario(e.target.checked)}
-                  />
-                  <span className="text-sm font-medium text-slate-700">
-                    Registrar no Diário de Bordo também
-                  </span>
-                </label>
-
-                {modalRegistrarNoDiario && (
-                  <div className="mt-3 rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                    Use o Diário para registrar atendimento, visita, reunião e contexto importante da ação.
-                  </div>
-                )}
-
-                {modalRegistrarNoDiario && (
-                  <div className="mt-4 grid gap-4 lg:grid-cols-2">
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-slate-700">
-                        Tipo da atividade
-                      </label>
-                      <select
-                        value={modalTipoAtividadeDiario}
-                        onChange={(e) => setModalTipoAtividadeDiario(e.target.value)}
+                        value={modalStatusFechamento}
+                        onChange={(e) => setModalStatusFechamento(e.target.value)}
                         className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
                       >
-                        <option value="Visita Cliente">Visita Cliente</option>
-                        <option value="Visita Imobiliária">Visita Imobiliária</option>
-                        <option value="Atendimento ao Cliente">Atendimento ao Cliente</option>
-                        <option value="Ligações Leads">Ligações Leads</option>
-                        <option value="Flow Up Corretores">Flow Up Corretores</option>
-                        <option value="Reunião">Reunião</option>
-                        <option value="Feirão">Feirão</option>
-                        <option value="Ação de Rua">Ação de Rua</option>
-                        <option value="Aprovação">Aprovação</option>
-                        <option value="Outro">Outro</option>
+                        <option value="Em andamento">Em andamento</option>
+                        <option value="Visita realizada">Visita realizada</option>
+                        <option value="Proposta enviada">Proposta enviada</option>
+                        <option value="Em negociação">Em negociação</option>
+                        <option value="Aguardando cliente">Aguardando cliente</option>
+                        <option value="Fechado">Fechado</option>
+                        <option value="Perdido">Perdido</option>
+                        <option value="Cancelado">Cancelado</option>
                       </select>
                     </div>
+                  )}
+                </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700">
-                        Data do registro
-                      </label>
-                      <input
-                        type="date"
-                        value={modalDataDiario}
-                        onChange={(e) => setModalDataDiario(e.target.value)}
-                        className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                      />
-                    </div>
+                <div className="rounded-xl border border-slate-200 p-4">
+                  <label className="inline-flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={modalLancarNaAgenda}
+                      onChange={(e) => setModalLancarNaAgenda(e.target.checked)}
+                    />
+                    <span className="text-sm font-medium text-slate-700">
+                      Lançar na Minha Agenda também
+                    </span>
+                  </label>
 
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700">Hora</label>
-                      <input
-                        type="time"
-                        value={modalHoraDiario}
-                        onChange={(e) => setModalHoraDiario(e.target.value)}
-                        className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                      />
+                  {modalLancarNaAgenda && (
+                    <div className="mt-3 rounded-xl bg-blue-50 px-3 py-2 text-xs text-blue-800">
+                      Ideal para visita, reunião, proposta presencial ou qualquer compromisso com data marcada.
                     </div>
+                  )}
 
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700">
-                        Imobiliária
-                      </label>
-                      <input
-                        type="text"
-                        value={modalImobiliariaDiario}
-                        onChange={(e) => setModalImobiliariaDiario(e.target.value)}
-                        placeholder="Digite a imobiliária"
-                        className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                      />
-                    </div>
+                  {modalLancarNaAgenda && (
+                    <div className="mt-4 grid gap-4 lg:grid-cols-3">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700">
+                          Data na agenda
+                        </label>
+                        <input
+                          type="date"
+                          value={modalDataAgenda}
+                          min={DATA_HOJE()}
+                          onChange={(e) => setModalDataAgenda(e.target.value)}
+                          className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
+                        />
+                      </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700">Corretor</label>
-                      <input
-                        type="text"
-                        value={modalCorretorDiario}
-                        onChange={(e) => setModalCorretorDiario(e.target.value)}
-                        placeholder="Digite o corretor"
-                        className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                      />
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700">Hora</label>
+                        <input
+                          type="time"
+                          value={modalHoraAgenda}
+                          onChange={(e) => setModalHoraAgenda(e.target.value)}
+                          className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700">Local</label>
+                        <input
+                          type="text"
+                          value={modalLocalAgenda}
+                          onChange={(e) => setModalLocalAgenda(e.target.value)}
+                          placeholder="Ex.: obra, stand, escritório"
+                          className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
+                        />
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
 
-              <div className="rounded-xl border border-slate-200 p-4">
-                <label className="inline-flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={modalCriarFechamento}
-                    onChange={(e) => setModalCriarFechamento(e.target.checked)}
-                  />
-                  <span className="text-sm font-medium text-slate-700">
-                    Criar acompanhamento em Fechamentos também
-                  </span>
-                </label>
+              <div className="sticky bottom-0 mt-6 flex flex-col-reverse gap-3 border-t border-slate-200 bg-white pt-4 sm:flex-row sm:justify-end">
+                <button
+                  onClick={resetarModalConclusao}
+                  className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 sm:w-auto"
+                >
+                  Cancelar
+                </button>
 
-                {modalCriarFechamento && (
-                  <div className="mt-3 rounded-xl bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
-                    Ative isso quando a tarefa já virou acompanhamento comercial em Fechamentos.
-                  </div>
-                )}
-
-                {modalCriarFechamento && (
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-slate-700">
-                      Status inicial do fechamento
-                    </label>
-                    <select
-                      value={modalStatusFechamento}
-                      onChange={(e) => setModalStatusFechamento(e.target.value)}
-                      className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                    >
-                      <option value="Em andamento">Em andamento</option>
-                      <option value="Visita realizada">Visita realizada</option>
-                      <option value="Proposta enviada">Proposta enviada</option>
-                      <option value="Em negociação">Em negociação</option>
-                      <option value="Aguardando cliente">Aguardando cliente</option>
-                      <option value="Fechado">Fechado</option>
-                      <option value="Perdido">Perdido</option>
-                      <option value="Cancelado">Cancelado</option>
-                    </select>
-                  </div>
-                )}
-              </div>
-
-              <div className="rounded-xl border border-slate-200 p-4">
-                <label className="inline-flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={modalLancarNaAgenda}
-                    onChange={(e) => setModalLancarNaAgenda(e.target.checked)}
-                  />
-                  <span className="text-sm font-medium text-slate-700">
-                    Lançar na Minha Agenda também
-                  </span>
-                </label>
-
-                {modalLancarNaAgenda && (
-                  <div className="mt-3 rounded-xl bg-blue-50 px-3 py-2 text-xs text-blue-800">
-                    Ideal para visita, reunião, proposta presencial ou qualquer compromisso com data marcada.
-                  </div>
-                )}
-
-                {modalLancarNaAgenda && (
-                  <div className="mt-4 grid gap-4 lg:grid-cols-3">
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700">
-                        Data na agenda
-                      </label>
-                      <input
-                        type="date"
-                        value={modalDataAgenda}
-                        min={DATA_HOJE()}
-                        onChange={(e) => setModalDataAgenda(e.target.value)}
-                        className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700">Hora</label>
-                      <input
-                        type="time"
-                        value={modalHoraAgenda}
-                        onChange={(e) => setModalHoraAgenda(e.target.value)}
-                        className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700">Local</label>
-                      <input
-                        type="text"
-                        value={modalLocalAgenda}
-                        onChange={(e) => setModalLocalAgenda(e.target.value)}
-                        placeholder="Ex.: obra, stand, escritório"
-                        className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
-                      />
-                    </div>
-                  </div>
-                )}
+                <button
+                  onClick={() => void concluirTarefa()}
+                  disabled={salvandoId === modalTarefaId}
+                  className="w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                >
+                  {salvandoId === modalTarefaId ? "Salvando..." : "Continuar"}
+                </button>
               </div>
             </div>
-
-            <div className="sticky bottom-0 mt-6 flex flex-col-reverse gap-3 border-t border-slate-200 bg-white pt-4 sm:flex-row sm:justify-end">
-              <button onClick={resetarModalConclusao} className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 sm:w-auto">
-                Cancelar
-              </button>
-
-              <button
-                onClick={concluirTarefa}
-                disabled={salvandoId === modalTarefaId}
-                className="w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
-              >
-                {salvandoId === modalTarefaId ? "Salvando..." : "Continuar"}
-              </button>
-            </div>
-          </div>
           </div>
         </div>
       )}

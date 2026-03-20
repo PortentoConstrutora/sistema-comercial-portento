@@ -1,3 +1,4 @@
+// app/page.tsx
 "use client";
 
 import Link from "next/link";
@@ -27,8 +28,30 @@ type RadarItem = {
   offset?: string;
 };
 
+type PerformancePeriodo = "mes" | "trimestre";
+
+type PerformanceMes = {
+  mes: string;
+  meta: number;
+  atual: number;
+};
+
 function classNames(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
+}
+
+function formatarMoedaCompacta(valor: number) {
+  if (valor >= 1_000_000) {
+    const mi = valor / 1_000_000;
+    return `R$ ${mi.toFixed(1).replace(".", ",")} mi`;
+  }
+
+  if (valor >= 1_000) {
+    const mil = valor / 1_000;
+    return `R$ ${Math.round(mil)} mil`;
+  }
+
+  return `R$ ${valor.toLocaleString("pt-BR")}`;
 }
 
 function SparkBars() {
@@ -137,7 +160,9 @@ function LinePerformance() {
         <div className="mb-2 rounded-2xl bg-white px-3 py-2">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-400">leitura</p>
+              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+                leitura
+              </p>
               <p className="mt-0.5 text-sm font-semibold text-slate-700">{ativo.mes}</p>
             </div>
             <div className="text-right text-sm font-bold text-slate-950">{ativo.valor}</div>
@@ -146,7 +171,16 @@ function LinePerformance() {
 
         <svg viewBox="0 0 520 220" className="h-44 w-full">
           {[34, 84, 134].map((y) => (
-            <line key={y} x1="0" y1={y} x2="520" y2={y} stroke="#cbd5e1" strokeDasharray="6 8" strokeWidth="1" />
+            <line
+              key={y}
+              x1="0"
+              y1={y}
+              x2="520"
+              y2={y}
+              stroke="#cbd5e1"
+              strokeDasharray="6 8"
+              strokeWidth="1"
+            />
           ))}
 
           <defs>
@@ -184,7 +218,13 @@ function LinePerformance() {
             { x: 500, y: 88, valor: pontos[5] },
           ].map((ponto, i) => (
             <g key={i}>
-              <circle cx={ponto.x} cy={ponto.y} r="10" fill="transparent" onMouseEnter={() => setAtivo(ponto.valor)} />
+              <circle
+                cx={ponto.x}
+                cy={ponto.y}
+                r="10"
+                fill="transparent"
+                onMouseEnter={() => setAtivo(ponto.valor)}
+              />
               <circle cx={ponto.x} cy={ponto.y} r="4.5" fill="#2563eb" />
             </g>
           ))}
@@ -197,7 +237,14 @@ function LinePerformance() {
             [380, "Mai"],
             [470, "Jun"],
           ].map(([x, label]) => (
-            <text key={String(label)} x={Number(x)} y="210" fill="#94a3b8" fontSize="12" fontWeight="700">
+            <text
+              key={String(label)}
+              x={Number(x)}
+              y="210"
+              fill="#94a3b8"
+              fontSize="12"
+              fontWeight="700"
+            >
               {label}
             </text>
           ))}
@@ -263,7 +310,14 @@ function RadarDonutCard() {
         <div className="grid items-center gap-2.5 md:grid-cols-[176px_1fr]">
           <div className="mx-auto relative h-[176px] w-[176px]">
             <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90">
-              <circle cx="60" cy="60" r="42" fill="none" stroke="#e2e8f0" strokeWidth="12" />
+              <circle
+                cx="60"
+                cy="60"
+                r="42"
+                fill="none"
+                stroke="#e2e8f0"
+                strokeWidth="12"
+              />
               {itens.map((item) => (
                 <circle
                   key={item.nome}
@@ -302,13 +356,17 @@ function RadarDonutCard() {
                   onMouseLeave={() => setAtivo(null)}
                   className={classNames(
                     "flex items-center justify-between rounded-2xl border px-3 py-2 transition",
-                    destacado ? "border-slate-300 bg-white shadow-sm" : "border-slate-200 bg-white/85"
+                    destacado
+                      ? "border-slate-300 bg-white shadow-sm"
+                      : "border-slate-200 bg-white/85"
                   )}
                 >
                   <div className="flex min-w-0 items-center gap-2">
                     <span className={classNames("h-2.5 w-2.5 shrink-0 rounded-full", item.cor)} />
                     <div className="min-w-0">
-                      <p className="truncate text-[0.94rem] font-semibold text-slate-900">{item.nome}</p>
+                      <p className="truncate text-[0.94rem] font-semibold text-slate-900">
+                        {item.nome}
+                      </p>
                       <p className="text-[11px] text-slate-500">{item.detalhe}</p>
                     </div>
                   </div>
@@ -325,58 +383,229 @@ function RadarDonutCard() {
   );
 }
 
+function polarToCartesian(
+  cx: number,
+  cy: number,
+  radius: number,
+  angleInDegrees: number
+) {
+  const angleInRadians = ((angleInDegrees - 180) * Math.PI) / 180;
+  return {
+    x: cx + radius * Math.cos(angleInRadians),
+    y: cy + radius * Math.sin(angleInRadians),
+  };
+}
+
+function describeArc(
+  cx: number,
+  cy: number,
+  radius: number,
+  startAngle: number,
+  endAngle: number
+) {
+  const start = polarToCartesian(cx, cy, radius, endAngle);
+  const end = polarToCartesian(cx, cy, radius, startAngle);
+  const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+
+  return `M ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`;
+}
+
+function getGaugeVisual(percentual: number) {
+  if (percentual < 20) {
+    return {
+      corStroke: "#ef4444",
+      corBadge: "text-red-600",
+      emoji: "😟",
+      fundo: "bg-red-50",
+    };
+  }
+
+  if (percentual < 50) {
+    return {
+      corStroke: "#f59e0b",
+      corBadge: "text-amber-600",
+      emoji: "😐",
+      fundo: "bg-amber-50",
+    };
+  }
+
+  if (percentual < 90) {
+    return {
+      corStroke: "#86efac",
+      corBadge: "text-green-500",
+      emoji: "🙂",
+      fundo: "bg-green-50",
+    };
+  }
+
+  return {
+    corStroke: "#16a34a",
+    corBadge: "text-green-700",
+    emoji: "🤩",
+    fundo: "bg-green-100",
+  };
+}
+
 function GaugeCard() {
-  const percentual = 82;
-  const emoji = percentual < 30 ? "🙁" : percentual < 60 ? "😬" : percentual < 90 ? "🙂" : "🤩";
+  const [periodo, setPeriodo] = useState<PerformancePeriodo>("mes");
+
+  const dadosMensais: PerformanceMes[] = [
+    { mes: "Jul", meta: 980_000, atual: 846_000 },
+    { mes: "Ago", meta: 1_050_000, atual: 601_000 },
+    { mes: "Set", meta: 1_100_000, atual: 912_000 },
+  ];
+
+  const dadosExibicao = useMemo(() => {
+    const mesAtual = dadosMensais[dadosMensais.length - 1];
+
+    if (periodo === "mes") {
+      const gap = Math.max(mesAtual.meta - mesAtual.atual, 0);
+      const percentual = Math.min(Math.round((mesAtual.atual / mesAtual.meta) * 100), 100);
+
+      return {
+        titulo: "Performance do mês",
+        subtitulo: `Referência: ${mesAtual.mes}`,
+        meta: mesAtual.meta,
+        atual: mesAtual.atual,
+        gap,
+        percentual,
+      };
+    }
+
+    const metaTrimestre = dadosMensais.reduce((acc, item) => acc + item.meta, 0);
+    const atualTrimestre = dadosMensais.reduce((acc, item) => acc + item.atual, 0);
+    const gapTrimestre = Math.max(metaTrimestre - atualTrimestre, 0);
+    const percentualTrimestre = Math.min(
+      Math.round((atualTrimestre / metaTrimestre) * 100),
+      100
+    );
+
+    return {
+      titulo: "Performance do trimestre",
+      subtitulo: "Soma dos últimos 3 meses",
+      meta: metaTrimestre,
+      atual: atualTrimestre,
+      gap: gapTrimestre,
+      percentual: percentualTrimestre,
+    };
+  }, [periodo]);
+
+  const percentual = dadosExibicao.percentual;
+  const visual = getGaugeVisual(percentual);
+  const endAngle = 180 - (180 * percentual) / 100;
+  const arcoBg = describeArc(110, 118, 78, 180, 0);
+  const arcoValor = describeArc(110, 118, 78, 180, Math.max(endAngle, 0));
 
   return (
     <div className="rounded-[20px] border border-slate-200 bg-white p-3 shadow-sm">
-      <h3 className="text-[1rem] font-bold tracking-tight text-slate-950">
-        Performance do mês
-      </h3>
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h3 className="text-[1rem] font-bold tracking-tight text-slate-950">
+            {dadosExibicao.titulo}
+          </h3>
+          <p className="mt-1 text-xs text-slate-500">{dadosExibicao.subtitulo}</p>
+        </div>
+
+        <div className="inline-flex rounded-full border border-slate-200 bg-slate-50 p-1">
+          <button
+            type="button"
+            onClick={() => setPeriodo("mes")}
+            className={classNames(
+              "rounded-full px-3 py-1.5 text-[11px] font-semibold transition",
+              periodo === "mes"
+                ? "bg-slate-900 text-white shadow-sm"
+                : "text-slate-600 hover:bg-white"
+            )}
+          >
+            Mês
+          </button>
+          <button
+            type="button"
+            onClick={() => setPeriodo("trimestre")}
+            className={classNames(
+              "rounded-full px-3 py-1.5 text-[11px] font-semibold transition",
+              periodo === "trimestre"
+                ? "bg-slate-900 text-white shadow-sm"
+                : "text-slate-600 hover:bg-white"
+            )}
+          >
+            Trimestre
+          </button>
+        </div>
+      </div>
 
       <div className="mt-2.5 rounded-[16px] bg-slate-50 p-3">
-        <div className="flex items-center justify-center">
-          <div className="relative h-[188px] w-full max-w-[280px]">
-            <svg viewBox="0 0 220 150" className="absolute inset-0 h-full w-full">
+        <div className="mx-auto flex max-w-[330px] flex-col items-center">
+          <div className="relative h-[190px] w-[260px]">
+            <svg viewBox="0 0 220 160" className="h-full w-full overflow-visible">
               <path
-                d="M172 49 A90 90 0 0 1 200 126"
+                d={arcoBg}
                 fill="none"
-                stroke="#d8dee8"
-                strokeWidth="16"
+                stroke="#cbd5e1"
+                strokeWidth="14"
                 strokeLinecap="round"
               />
               <path
-                d="M20 126 A90 90 0 0 1 172 49"
+                d={arcoValor}
                 fill="none"
-                stroke="#60a5fa"
-                strokeWidth="16"
+                stroke={visual.corStroke}
+                strokeWidth="14"
                 strokeLinecap="round"
               />
             </svg>
 
-            <div className="absolute inset-0 flex flex-col items-center justify-end pb-3 text-center">
-              <div className="text-[3.4rem] leading-none">{emoji}</div>
-              <div className="mt-1 text-[1.9rem] font-bold tracking-tight text-slate-950">{percentual}%</div>
-              <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+            <div className="absolute inset-0 flex flex-col items-center justify-center pt-5 text-center">
+              <div
+                className={classNames(
+                  "flex h-16 w-16 items-center justify-center rounded-full text-[2.2rem] shadow-sm",
+                  visual.fundo
+                )}
+              >
+                {visual.emoji}
+              </div>
+
+              <div
+                className={classNames(
+                  "mt-3 text-[2rem] font-bold leading-none tracking-tight",
+                  visual.corBadge
+                )}
+              >
+                {percentual}%
+              </div>
+
+              <div className="mt-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">
                 meta atingida
               </div>
             </div>
           </div>
-        </div>
 
-        <div className="-mt-3 grid grid-cols-3 gap-1.5 text-center">
-          <div className="rounded-2xl bg-white px-2.5 py-2">
-            <div className="text-[9px] font-semibold uppercase tracking-[0.16em] text-slate-400">Meta</div>
-            <div className="mt-1 text-[0.95rem] font-bold text-slate-950">R$ 1,1 mi</div>
-          </div>
-          <div className="rounded-2xl bg-white px-2.5 py-2">
-            <div className="text-[9px] font-semibold uppercase tracking-[0.16em] text-slate-400">Atual</div>
-            <div className="mt-1 text-[0.95rem] font-bold text-slate-950">R$ 912 mil</div>
-          </div>
-          <div className="rounded-2xl bg-white px-2.5 py-2">
-            <div className="text-[9px] font-semibold uppercase tracking-[0.16em] text-slate-400">Gap</div>
-            <div className="mt-1 text-[0.95rem] font-bold text-slate-950">R$ 188 mil</div>
+          <div className="-mt-2 grid w-full grid-cols-3 gap-2 text-center">
+            <div className="rounded-2xl bg-white px-2.5 py-2 shadow-sm">
+              <div className="text-[9px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                Meta
+              </div>
+              <div className="mt-1 text-[0.95rem] font-bold text-slate-950">
+                {formatarMoedaCompacta(dadosExibicao.meta)}
+              </div>
+            </div>
+
+            <div className="rounded-2xl bg-white px-2.5 py-2 shadow-sm">
+              <div className="text-[9px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                Atual
+              </div>
+              <div className="mt-1 text-[0.95rem] font-bold text-slate-950">
+                {formatarMoedaCompacta(dadosExibicao.atual)}
+              </div>
+            </div>
+
+            <div className="rounded-2xl bg-white px-2.5 py-2 shadow-sm">
+              <div className="text-[9px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                Gap
+              </div>
+              <div className="mt-1 text-[0.95rem] font-bold text-slate-950">
+                {formatarMoedaCompacta(dadosExibicao.gap)}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -448,7 +677,7 @@ export default function HomePage() {
                   Abrir tarefas
                 </Link>
                 <Link
-                  href="/crm/meus-leads"
+                  href="/crm/todos-leads"
                   className="rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15"
                 >
                   Ver meus leads
@@ -458,14 +687,21 @@ export default function HomePage() {
 
             <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
               {kpis.map((item) => (
-                <div key={item.titulo} className="rounded-[16px] border border-white/10 bg-white/8 px-4 py-1.5 backdrop-blur-sm">
+                <div
+                  key={item.titulo}
+                  className="rounded-[16px] border border-white/10 bg-white/8 px-4 py-1.5 backdrop-blur-sm"
+                >
                   <p className="text-[0.84rem] text-slate-300">{item.titulo}</p>
                   <div className="mt-1 flex items-end justify-between gap-3">
-                    <p className="text-[1.18rem] font-bold leading-none tracking-tight text-white">{item.valor}</p>
+                    <p className="text-[1.18rem] font-bold leading-none tracking-tight text-white">
+                      {item.valor}
+                    </p>
                     <span
                       className={classNames(
                         "rounded-full px-2.5 py-1 text-[9px] font-semibold",
-                        item.positiva ? "bg-emerald-400/15 text-emerald-200" : "bg-sky-400/15 text-sky-200"
+                        item.positiva
+                          ? "bg-emerald-400/15 text-emerald-200"
+                          : "bg-sky-400/15 text-sky-200"
                       )}
                     >
                       {item.variacao}
